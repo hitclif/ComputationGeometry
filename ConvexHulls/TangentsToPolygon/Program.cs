@@ -17,12 +17,12 @@ namespace TangentsToPolygon
             foreach(var point in points)
             {
                 var tangents = point
-                    .FindTangents(polygon);
+                    .FindTangentsBinarySearch(polygon);
 
                 Console.WriteLine($"{tangents.Item1.X} {tangents.Item1.Y} {tangents.Item2.X} {tangents.Item2.Y}");
             }
 
-            // Console.ReadLine();
+            Console.ReadLine();
         }
 
         static Point[] ReadPolygon()
@@ -142,6 +142,17 @@ namespace TangentsToPolygon
             return new Tuple<Point, Point>(leftTangent, rightTangent);
         }
 
+        public static Tuple<Point, Point> FindTangentsBinarySearch(this Point point, IReadOnlyCollection<Point> polygon)
+        {
+            var angleComparer = new AngleDistanceComparer(point);
+
+            var sortedPoints = polygon
+                .OrderByDescending(p => p, angleComparer)
+                .ToArray();
+
+            return new Tuple<Point, Point>(sortedPoints.First(), sortedPoints.Last());
+        }
+
         private static Edge GetPreviousEdge(this IReadOnlyCollection<Point> polygon, int pointIndex)
         {
             return new Edge(polygon.GetPreviousPoint(pointIndex), polygon.ElementAt(pointIndex));
@@ -159,7 +170,7 @@ namespace TangentsToPolygon
             return polygon.ElementAt(previousIndex);
         }
 
-        private static long Position(this Point point, Edge toEdge)
+        public static long Position(this Point point, Edge toEdge)
         {
             var v1 = toEdge.A;
             var v2 = toEdge.B;
@@ -167,19 +178,41 @@ namespace TangentsToPolygon
             return ((v2.X - v1.X) * (point.Y - v1.Y) - (point.X - v1.X) * (v2.Y - v1.Y)).Sign();
         }
 
-        private static bool IsLeft(this long position)
+        public static bool IsLeft(this long position)
         {
             return position.Sign() > 0;
         }
 
-        private static bool IsRight(this long position)
+        public static bool IsRight(this long position)
         {
             return position.Sign() < 0;
         }
 
-        private static long Sign(this long value)
+        public static long Sign(this long value)
         {
             return Math.Sign(value);
+        }
+    }
+
+    class AngleDistanceComparer : IComparer<Point>
+    {
+        private readonly Point _zeroPoint;
+
+        public AngleDistanceComparer(Point zeroPoint)
+        {
+            _zeroPoint = zeroPoint;
+        }
+
+        public int Compare(Point x, Point y)
+        {
+            var position = y.Position(new Edge(_zeroPoint, x));
+            if(position != 0)
+            {
+                return -Math.Sign(position);
+            }
+
+            var diff = Math.Abs(_zeroPoint.Y - x.Y) - Math.Abs(_zeroPoint.Y - y.Y);
+            return Math.Sign(diff);
         }
     }
 }
