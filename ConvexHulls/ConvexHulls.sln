@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvexPolygon", "ConvexPoly
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvexHull", "ConvexHull\ConvexHull.csproj", "{96B24B7A-D7B8-44AC-87F1-0C08E28A478B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TangentsToPolygon", "TangentsToPolygon\TangentsToPolygon.csproj", "{6053FC7E-A1A7-49EE-A327-1A1EEC9BD039}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{96B24B7A-D7B8-44AC-87F1-0C08E28A478B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96B24B7A-D7B8-44AC-87F1-0C08E28A478B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96B24B7A-D7B8-44AC-87F1-0C08E28A478B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6053FC7E-A1A7-49EE-A327-1A1EEC9BD039}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6053FC7E-A1A7-49EE-A327-1A1EEC9BD039}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6053FC7E-A1A7-49EE-A327-1A1EEC9BD039}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6053FC7E-A1A7-49EE-A327-1A1EEC9BD039}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
