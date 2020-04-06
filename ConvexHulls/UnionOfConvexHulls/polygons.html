@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+        svg.cartesian {
+            display: flex;
+        }
+
+            /* Flip the vertical axis in <g> to emulate cartesian. */
+        svg.cartesian > g {
+            transform: scaleY(-1);
+        }
+
+        .cart > polygon
+        {
+            transform: scaleY(-1);
+        }
+
+        .cart.red > text {
+            font-size: xx-small;
+            transform: scaleY(-1);
+        }
+
+        .cart.blue > text {
+            transform: scaleY(-1);
+        }
+
+        .cart.green > text {
+            font-size: xx-small;
+            fill: green;
+            transform: scaleY(-1);
+        }
+
+    </style>
+</head>
+<body>
+    <svg viewBox="-25,-25,50,50" width="400" height="400" class="cart">
+        <polygon points="2 17 -17 6 -15 -5 -6 -10 1 -11 18 15" style="fill:transparent;stroke:red;stroke-width:1" />
+        <polygon points="-16 10 -6 -8 0 2" style="fill:transparent;stroke:green;stroke-width:1" />
+        <polygon points="16 13 11 12 6 10 -10 -4 -14 -11 -3 -16 8 -20 15 -10 " style="fill:transparent;stroke:blue;stroke-width:1" />
+
+        <g class="cart red">
+            <text x="2" y="-17" fill="red">2;-17</text>
+            <text x="-17" y="6" fill="red">-17;6</text>
+            <text x="-15" y="-5" fill="red">-15;-5</text>
+            <text x="-6" y="-10" fill="red">-6;-10</text>
+            <text x="1" y="-11" fill="red">-1;-11</text>
+            <text x="18" y="15" fill="red">18;15</text>
+        </g>
+
+        <g class="cart green">
+            <text x="-16" y="10">2;-17</text>
+            <text x="-6" y="-8">-17;6</text>
+            <text x="0" y="2">-15;-5</text>
+        </g>
+
+    </svg>
+    <!--<svg viewBox="0,0,500,500">
+        <g transform="translate(100, 100)" class="cart">
+            <polygon points="-50 40 -30 30 20 20 80 20 50 50 -10 70" style="fill:white;stroke:red;stroke-width:1" />
+            <polygon points="-10 -40 40 -20 10 10 -30 20 -50 -10" style="fill:white;stroke:blue;stroke-width:1" />
+        </g>
+        <g transform="translate(100, 100)" class="cart red">
+            <text x="-50" y="40" fill="red">-5;4</text>
+            <text x="-30" y="30" fill="red">-3;3</text>
+            <text x="20" y="20" fill="red">2;2</text>
+            <text x="80" y="20" fill="red">8;2</text>
+            <text x="50" y="50" fill="red">5;5</text>
+            <text x="-10" y="70" fill="red">-1;7</text>
+        </g>
+        <g transform="translate(100, 100)" class="cart blue">
+
+            <text x="-10" y="-40" fill="blue">-1;-4</text>
+            <text x="40" y="-20" fill="blue">4;-2</text>
+            <text x="10" y="10" fill="blue">1;1</text>
+            <text x="-30" y="20" fill="blue">-3;2</text>
+            <text x="-50" y="-10" fill="blue">-5;-1</text>
+        </g>
+    </svg>-->
+</body>
+</html>
