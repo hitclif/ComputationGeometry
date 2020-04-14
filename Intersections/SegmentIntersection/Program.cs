@@ -20,13 +20,22 @@ namespace SegmentIntersection
 
             var u = new Segment(new Point(0, 0), new Point(10, 0));
             var v = new Segment(new Point(5, 0), new Point(15, 0));
+#elif oneline
+            while(true)
+            {
+                var pair = ReadSegments();
+                var intersection = Tools.Intersection(pair.Item1, pair.Item2);
+                Console.WriteLine(intersection.ToString());
+            }
 #else
             var u = ReadSegment();
             var v = ReadSegment();
-#endif
+
             var intersection = Tools.Intersection(u, v);
             Console.WriteLine(intersection.ToString());
             Console.ReadLine();
+#endif
+
         }
 
         private static Segment ReadSegment()
@@ -35,6 +44,21 @@ namespace SegmentIntersection
             return new Segment(
                 new Point(Convert.ToInt64(line[0]), Convert.ToInt64(line[1])),
                 new Point(Convert.ToInt64(line[2]), Convert.ToInt64(line[3])));
+        }
+
+        private static Tuple<Segment,Segment> ReadSegments()
+        {
+            var line = Console.ReadLine().Trim().Split(' ').ToArray();
+
+            var u = new Segment(
+                new Point(Convert.ToInt64(line[0]), Convert.ToInt64(line[1])),
+                new Point(Convert.ToInt64(line[2]), Convert.ToInt64(line[3])));
+
+            var v = new Segment(
+                new Point(Convert.ToInt64(line[4]), Convert.ToInt64(line[5])),
+                new Point(Convert.ToInt64(line[6]), Convert.ToInt64(line[7])));
+
+            return new Tuple<Segment, Segment>(u, v);
         }
     }
 
@@ -50,9 +74,25 @@ namespace SegmentIntersection
         public long X { get; }
         public long Y { get; }
 
-        public long Multiply(Point point)
+        public override bool Equals(object obj)
         {
-            return this.X * point.X + this.Y * point.Y;
+            if(ReferenceEquals(obj, null) || !(obj is Point))
+            {
+                return false;
+            }
+
+            var point = (Point)obj;
+            return point == this;
+        }
+
+        public static bool operator ==(Point a, Point b)
+        {
+            return a.X == b.X && a.Y == b.Y;
+        }
+
+        public static bool operator !=(Point a, Point b)
+        {
+            return a.X == b.X && a.Y == b.Y;
         }
 
         public static long operator *(Point a, Point b)
@@ -91,7 +131,9 @@ namespace SegmentIntersection
     {
         Left,
         Right,
-        Collinear
+        CollinearOutside,
+        CollinearInside,
+        IsEndPoint
     }
 
     [Flags]
@@ -160,67 +202,12 @@ namespace SegmentIntersection
     {
         public static Intersection Intersection(Segment u, Segment v)
         {
-            var aPosition = u.GetPointPositionOf(v.A);
-            switch (aPosition)
-            {
-                case Position.Left:
-                    return IntersectionForFirstIsLeft(u, v);
-                case Position.Right:
-                    return IntersectionForFirstIsRight(u, v);
-                case Position.Collinear:
-                    return IntersectionForFirstIsCollinear(u, v);
-            }
+            var areCollinear = u.IsCollinear(v);
+            var intersection = areCollinear
+                ? CalculateIntersectionOfCollinearSegments(u, v)
+                : CalculateIntersectionOfNonCollinearSegments(u, v);
 
-            return new EmptyIntersection();
-        }
-
-        private static Intersection IntersectionForFirstIsLeft(Segment u, Segment v)
-        {
-            var bPosition = u.GetPointPositionOf(v.B);
-            switch (bPosition)
-            {
-                case Position.Left:
-                case Position.Right:
-                    return CalculateIntersectionOfNonCollinearSegments(u, v);
-                case Position.Collinear:
-                    return v.B.IsOnSegment(u)
-                        ? (Intersection)new SinglePointIntersection(v.B)
-                        : new EmptyIntersection();
-            }
-
-            return new EmptyIntersection();
-        }
-
-        private static Intersection IntersectionForFirstIsRight(Segment u, Segment v)
-        {
-            var bPosition = u.GetPointPositionOf(v.B);
-            switch (bPosition)
-            {
-                case Position.Left:
-                case Position.Right:
-                    return CalculateIntersectionOfNonCollinearSegments(u, v);
-                case Position.Collinear:
-                    return v.B.IsOnSegment(u)
-                        ? (Intersection)new SinglePointIntersection(v.B)
-                        : new EmptyIntersection();
-            }
-
-            return new EmptyIntersection();
-        }
-
-        private static Intersection IntersectionForFirstIsCollinear(Segment u, Segment v)
-        {
-            var bPosition = u.GetPointPositionOf(v.B);
-            switch (bPosition)
-            {
-                case Position.Left:
-                case Position.Right:
-                    return CalculateIntersectionOfNonCollinearSegments(u, v);
-                case Position.Collinear:
-                    return CalculateIntersectionOfCollinearSegments(u, v);
-            }
-
-            return new EmptyIntersection();
+            return intersection;
         }
 
         private static Position GetPointPositionOf(this Segment v, Point point)
@@ -228,12 +215,32 @@ namespace SegmentIntersection
             var doubledArea = (v.B.X - v.A.X) * (point.Y - v.A.Y) - (point.X - v.A.X) * (v.B.Y - v.A.Y);
             if(doubledArea == 0)
             {
-                return Position.Collinear;
+                if(v.A == point || v.B == point)
+                {
+                    return Position.IsEndPoint;
+                }
+                
+                return point.IsOnSegment(v)
+                    ? Position.CollinearInside
+                    : Position.CollinearOutside;
             }
 
             return doubledArea < 0
                 ? Position.Left
                 : Position.Right;
+        }
+
+        private static bool IsCollinear(this Segment u, Segment v)
+        {
+            var a = u.GetPointPositionOf(v.A);
+            var b = u.GetPointPositionOf(v.B);
+
+            return a.IsCollinearPosition() && b.IsCollinearPosition();
+        }
+
+        private static bool IsCollinearPosition(this Position position)
+        {
+            return position == Position.CollinearInside || position == Position.CollinearOutside || position == Position.IsEndPoint;
         }
 
         private static bool IsOnSegment(this Point point, Segment v)
@@ -262,28 +269,53 @@ namespace SegmentIntersection
 
         private static Intersection CalculateIntersectionOfCollinearSegments(Segment u, Segment v)
         {
-            var intersections = IntersectionPoint.None
-                | (v.A.IsOnSegment(u) ? IntersectionPoint.V1 : IntersectionPoint.None)
-                | (v.B.IsOnSegment(u) ? IntersectionPoint.V2 : IntersectionPoint.None)
-                | (u.A.IsOnSegment(v) ? IntersectionPoint.V3 : IntersectionPoint.None)
-                | (u.B.IsOnSegment(v) ? IntersectionPoint.V4 : IntersectionPoint.None)
-                ;
-
-            switch (intersections)
+            var positions = new[]
             {
-                case IntersectionPoint.None:
-                    return new EmptyIntersection();
-                case IntersectionPoint.V1:
-                    return new SinglePointIntersection(v.A);
-                case IntersectionPoint.V2:
-                    return new SinglePointIntersection(v.B);
-                case IntersectionPoint.V3:
-                    return new SinglePointIntersection(u.A);
-                case IntersectionPoint.V4:
-                    return new SinglePointIntersection(u.B);
-                default:
-                    return new SegmentIntersection();
+                new { pos = v.GetPointPositionOf(u.A) , point = u.A },
+                new { pos = v.GetPointPositionOf(u.B) , point = u.B },
+                new { pos = u.GetPointPositionOf(v.A) , point = v.A },
+                new { pos = u.GetPointPositionOf(v.B) , point = v.B }
+            };
+
+            int inside = 0;
+            int outside = 0;
+            int endpoint = 0;
+
+            foreach (var p in positions)
+            {
+                switch (p.pos)
+                {
+                    case Position.CollinearOutside:
+                        outside++;
+                        break;
+                    case Position.CollinearInside:
+                        inside++;
+                        break;
+                    case Position.IsEndPoint:
+                        endpoint++;
+                        break;
+                    default:
+                        throw new Exception();
+                }
             }
+
+            if(outside == 4)
+            {
+                return new EmptyIntersection();
+            }
+
+            if(inside > 0 || endpoint == 4)
+            {
+                return new SegmentIntersection();
+            }
+
+            if(endpoint == 2)
+            {
+                var point = positions.First(p => p.pos == Position.IsEndPoint).point;
+                return new SinglePointIntersection(point);
+            }
+
+            throw new Exception();
         }
 
         private static double CalculateIntersectionParameter(this Segment u, Segment v)
