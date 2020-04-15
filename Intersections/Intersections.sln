@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30001.183
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SegmentIntersection", "SegmentIntersection\SegmentIntersection.csproj", "{D9BB8E10-BC8A-4080-BB80-A3026528D936}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerticalHorizontalSegments", "VerticalHorizontalSegments\VerticalHorizontalSegments.csproj", "{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{D9BB8E10-BC8A-4080-BB80-A3026528D936}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D9BB8E10-BC8A-4080-BB80-A3026528D936}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D9BB8E10-BC8A-4080-BB80-A3026528D936}.Release|Any CPU.Build.0 = Release|Any CPU
+		{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
