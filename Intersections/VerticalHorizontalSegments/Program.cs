@@ -10,7 +10,7 @@ namespace VerticalHorizontalSegments
         static void Main(string[] args)
         {
 #if td1
-            var segments = TestData2();
+            var segments = TestData1();
 #else
             var segments = ReadSegments();
 #endif
@@ -148,6 +148,7 @@ namespace VerticalHorizontalSegments
             var groupA = segments
                 .Where(s => s.IsHorizontal)
                 .GroupBy(h => h.A.X, h => h);
+
             var groupB = segments
                 .Where(s => s.IsHorizontal)
                 .GroupBy(h => h.B.X, h => h);
@@ -228,8 +229,23 @@ namespace VerticalHorizontalSegments
 
         private static bool Insersects(this Segment horizontal, Segment vertical)
         {
-            return vertical.Top.X.IsBetween(horizontal.A.X, horizontal.B.X)
-                && horizontal.Bottom.Y.IsBetween(vertical.A.Y, vertical.B.Y);
+            var aHSign = AreaSign(horizontal, vertical.A);
+            var bHSign = AreaSign(horizontal, vertical.B);
+
+            var aVSign = AreaSign(vertical, horizontal.A);
+            var bVSign = AreaSign(vertical, horizontal.B);
+
+            return aHSign != bHSign && aVSign != bVSign;
+            // var doubledArea = (v.B.X - v.A.X) * (point.Y - v.A.Y) - (point.X - v.A.X) * (v.B.Y - v.A.Y);
+
+            //return vertical.Top.X.IsBetween(horizontal.A.X, horizontal.B.X)
+            //    && horizontal.Bottom.Y.IsBetween(vertical.A.Y, vertical.B.Y);
+        }
+
+        private static int AreaSign(Segment s, Point p)
+        {
+            var doubledArea = (s.B.X - s.A.X) * (p.Y - s.A.Y) - (p.X - s.A.X) * (s.B.Y - s.A.Y);
+            return Math.Sign(doubledArea);
         }
 
         private static bool IsBetween(this long v, long a, long b)
