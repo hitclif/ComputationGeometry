@@ -65,7 +65,7 @@ namespace SetOfSegments
     }
 
     [DebuggerDisplay("{X},{Y}")]
-    internal struct Point
+    public struct Point
     {
         public Point(long x, long y)
         {
@@ -109,7 +109,7 @@ namespace SetOfSegments
     }
 
     [DebuggerDisplay("{A},{B}")]
-    internal struct Segment
+    public struct Segment
     {
         public Segment(int id, long ax, long ay, long bx, long by) : this(id, new Point(ax, ay), new Point(bx, by))
         {
@@ -117,14 +117,19 @@ namespace SetOfSegments
 
         public Segment(int id, Point A, Point B)
         {
+            var points = new[] { A, B }
+                .OrderByDescending(p => p.Y)
+                .ThenBy(p => p.X)
+                .ToArray();
+
             this.Id = id;
-            this.A = A;
-            this.B = B;
+            this.A = points[0];
+            this.B = points[1];
         }
 
         public int Id { get; }
-        public Point A { get; }
-        public Point B { get; }
+        public Point A { get; } // upper left
+        public Point B { get; } // bottom right
 
         public Point CalculatePointOnLine(double t)
         {
@@ -140,18 +145,24 @@ namespace SetOfSegments
         }
     }
 
-    internal static class Tools
+    public static class Tools
     {
         public static IEnumerable<Intersection> FindIntersections(this IEnumerable<Segment> segments)
         {
+            var intersections = new List<Intersection>();
+            return intersections;
+        }
+
+        public static IEnumerable<Intersection> FindIntersectionsSlow(this IEnumerable<Segment> segments)
+        {
             var events = segments
-                .SelectMany(s => new[] { new Event(s.A.X, s), new Event(s.B.X, s) })
-                .OrderBy(e => e.X)
+                .SelectMany(s => new[] { new Event(s.A.Y, s), new Event(s.B.Y, s) })
+                .OrderByDescending(e => e.Time)
                 .ToList();
 
             var intersections = new List<Intersection>();
-
             var bag = new Dictionary<int, Segment>();
+
             while(events.Count > 0)
             {
                 var segment = events[0].Segment;
@@ -163,7 +174,7 @@ namespace SetOfSegments
                 }
                 else
                 {
-                    foreach(var v in bag.Values)
+                    foreach (var v in bag.Values)
                     {
                         if (segment.Intersects(v))
                         {
@@ -245,7 +256,7 @@ namespace SetOfSegments
         CollinearInside
     }
 
-    internal class Intersection
+    public class Intersection
     {
         public Intersection(Segment u, Segment v)
         {
@@ -259,18 +270,49 @@ namespace SetOfSegments
 
     internal class Event : IComparable<Event>
     {
-        public Event(long x, Segment segment)
+        public Event(long time, Segment segment)
         {
-            this.X = x;
+            this.Time = time;
             this.Segment = segment;
         }
 
-        public long X { get; }
+        public long Time { get; }
         public Segment Segment { get; }
 
         public int CompareTo(Event other)
         {
-            return Math.Sign(this.X - other.X);
+            return Math.Sign(this.Time - other.Time);
+        }
+    }
+
+    internal class SweepStatus
+    {
+        private SortedDictionary<long, SortedDictionary<long, Segment>> _status = new SortedDictionary<long, SortedDictionary<long, Segment>>();
+
+        public void Add(Segment s)
+        {
+            if (!_status.ContainsKey(s.A.Y))
+            {
+                _status.Add(s.A.Y, new SortedDictionary<long, Segment>());
+            }
+
+            _status[s.A.Y].Add(s.A.X, s);
+        }
+
+        public bool Exists(Segment s)
+        {
+            if (!_status.ContainsKey(s.A.Y))
+            {
+                return false;
+            }
+
+            return _status[s.A.Y].ContainsKey(s.A.X);
+        }
+
+        public IEnumerable<Intersection> FindIntersectionsAndRemove(Segment s)
+        {
+
+            return new Intersection[0];
         }
     }
 }
