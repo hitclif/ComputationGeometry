@@ -10,7 +10,7 @@ namespace VerticalHorizontalSegments
         static void Main(string[] args)
         {
 #if td1
-            var segments = TestData1();
+            var segments = TestData2();
 #else
             var segments = ReadSegments();
 #endif
@@ -76,8 +76,9 @@ namespace VerticalHorizontalSegments
         }
     }
 
+
     [DebuggerDisplay("{X},{Y}")]
-    internal struct Point
+    internal struct Point : IEquatable<Point>
     {
         public Point(long x, long y)
         {
@@ -88,356 +89,156 @@ namespace VerticalHorizontalSegments
         public long X { get; }
         public long Y { get; }
 
-        public override bool Equals(object obj)
+        public bool Equals(Point other)
         {
-            if (ReferenceEquals(obj, null) || !(obj is Point))
-            {
-                return false;
-            }
-
-            var point = (Point)obj;
-            return point == this;
-        }
-
-        public static bool operator ==(Point a, Point b)
-        {
-            return a.X == b.X && a.Y == b.Y;
-        }
-
-        public static bool operator !=(Point a, Point b)
-        {
-            return a.X == b.X && a.Y == b.Y;
-        }
-
-        public static long operator *(Point a, Point b)
-        {
-            return a.X * b.X + a.Y * b.Y;
+            return other.X == this.X && other.Y == this.Y;
         }
     }
 
-    [DebuggerDisplay("{A},{B}")]
+    [DebuggerDisplay("{}")]
     internal struct Segment
     {
-        public Segment(long[] coordinates): this(coordinates[0], coordinates[1], coordinates[2], coordinates[3])
+        public Segment(long[] coordinates) : this(coordinates[0], coordinates[1], coordinates[2], coordinates[3])
         {
-
         }
 
         public Segment(long ax, long ay, long bx, long by) : this(new Point(ax, ay), new Point(bx, by))
         {
-
         }
 
-        public Segment(Point A, Point B)
+        public Segment(Point a, Point b)
         {
-            this.A = A;
-            this.B = B;
+            if (a.X == b.X && a.Y == b.Y)
+            {
+                throw new Exception("single point");
+            }
+
+            if (a.X != b.X && a.Y != b.Y)
+            {
+                throw new Exception("not horizontal neither vertical");
+            }
+
+            this.A = a;
+            this.B = b;
         }
 
         public Point A { get; }
         public Point B { get; }
 
-        public Segment Perpendicular()
-        {
-            return new Segment(this.A, new Point(B.Y, -B.X));
-        }
+        public Point Left => this.A.X <= this.B.X ? this.A : this.B;
+        public Point Right => this.A.X > this.B.X ? this.A : this.B;
 
-        public Point CalculatePointOnLine(double t)
-        {
-            var x = A.X + (B.X - A.X) * t;
-            var y = A.Y + (B.Y - A.Y) * t;
+        public Point Bottom => this.A.Y <= this.B.Y ? this.A : this.B;
+        public Point Top => this.A.Y > this.B.Y ? this.A : this.B;
 
-            return new Point((long)x, (long)y);
-        }
-    }
-
-    enum Position
-    {
-        Left,
-        Right,
-        CollinearOutside,
-        CollinearInside,
-        IsEndPoint
-    }
-
-    [Flags]
-    enum IntersectionPoint
-    {
-        None = 0,
-        V1 = 1,
-        V2 = 2,
-        V3 = 4,
-        V4 = 8
-    }
-
-    abstract class Intersection
-    {
-        public abstract int Weight { get; }
-    }
-
-    class EmptyIntersection : Intersection
-    {
-        public override int Weight => 0;
-
-        public override string ToString()
-        {
-            return "No common points.";
-        }
-    }
-
-    class SinglePointIntersection : Intersection
-    {
-        private readonly double _x;
-        private readonly double _y;
-
-        public SinglePointIntersection(Point point) : this(point.X, point.Y)
-        {
-        }
-
-        public SinglePointIntersection(long x, long y)
-        {
-            _x = x;
-            _y = y;
-        }
-
-        public override int Weight => 1;
-
-        public override string ToString()
-        {
-            return $"The intersection point is ({_x}, {_y}).";
-        }
-    }
-
-    class SegmentIntersection : Intersection
-    {
-        public SegmentIntersection()
-        {
-        }
-
-        public override int Weight => int.MaxValue;
-
-        public override string ToString()
-        {
-            return "A common segment of non-zero length.";
-        }
+        public bool IsHorizontal => this.A.Y == this.B.Y;
+        public bool IsVertical => this.A.X == this.B.X;
     }
 
     internal static class Tools
     {
+        private enum Orientation
+        {
+            horizontal,
+            vertical
+        }
+
         public static int CountIntersections(this IEnumerable<Segment> segments)
         {
-            var temp = segments.ToList();
+            var groupA = segments
+                .Where(s => s.IsHorizontal)
+                .GroupBy(h => h.A.X, h => h);
+            var groupB = segments
+                .Where(s => s.IsHorizontal)
+                .GroupBy(h => h.B.X, h => h);
+
+            var horizontals = groupA
+                .Union(groupB)
+                .OrderBy(g => g.Key)
+                .ToList();
+
+            var verticals = segments
+                .Where(s => s.IsVertical)
+                .GroupBy(v => v.Top.X, v => v)
+                .OrderBy(g => g.Key)
+                .ToList();
+
+            if (horizontals.Count == 0 || verticals.Count == 0)
+            {
+                return 0;
+            }
+
+            var allXCoordinates = horizontals
+                .Select(h => h.Key)
+                .Union(verticals.Select(v => v.Key))
+                .OrderBy(k => k)
+                .ToArray();
 
             var count = 0;
-
-            while(temp.Count > 0)
+            var horizontalsBag = new List<Segment>();
+            foreach (var x in allXCoordinates)
             {
-                var segment = temp[0];
-                temp.RemoveAt(0);
+                if (verticals.Count == 0)
+                {
+                    break;
+                }
 
-                var i = temp
-                    .Select(s => Intersection(s, segment))
-                    .Where(s => s is SinglePointIntersection || s is SegmentIntersection)
-                    .Count();
+                IGrouping<long, Segment> h = null;
+                if (horizontals.Count > 0 && horizontals[0].Key == x)
+                {
+                    h = horizontals[0];
+                    horizontals.RemoveAt(0);
+                }
 
-                count += i;
+                IGrouping<long, Segment> v = null;
+                if (verticals[0].Key == x)
+                {
+                    v = verticals[0];
+                    verticals.RemoveAt(0);
+                }
+
+                var toRemove = h == null
+                    ? new Segment[0]
+                    : horizontalsBag.Intersect(h).ToArray();
+
+                horizontalsBag = h == null
+                    ? horizontalsBag
+                    : horizontalsBag.Union(h).Except(toRemove).ToList();
+
+                if (v != null)
+                {
+                    foreach (var ver in v)
+                    {
+                        foreach (var hor in toRemove)
+                        {
+                            count += hor.Insersects(ver) ? 1 : 0;
+                        }
+
+                        foreach(var hor in horizontalsBag)
+                        {
+                            count += hor.Insersects(ver) ? 1 : 0;
+                        }
+                    }
+
+                }
             }
 
             return count;
         }
 
-        public static Intersection Intersection(Segment u, Segment v)
+        private static bool Insersects(this Segment horizontal, Segment vertical)
         {
-            var areCollinear = u.IsCollinear(v);
-            var intersection = areCollinear
-                ? CalculateIntersectionOfCollinearSegments(u, v)
-                : CalculateIntersectionOfNonCollinearSegments(u, v);
-
-            return intersection;
+            return vertical.Top.X.IsBetween(horizontal.A.X, horizontal.B.X)
+                && horizontal.Bottom.Y.IsBetween(vertical.A.Y, vertical.B.Y);
         }
 
-        private static Position GetPointPositionOf(this Segment v, Point point)
+        private static bool IsBetween(this long v, long a, long b)
         {
-            var doubledArea = (v.B.X - v.A.X) * (point.Y - v.A.Y) - (point.X - v.A.X) * (v.B.Y - v.A.Y);
-            if (doubledArea == 0)
-            {
-                if (v.A == point || v.B == point)
-                {
-                    return Position.IsEndPoint;
-                }
-
-                return point.IsOnSegment(v)
-                    ? Position.CollinearInside
-                    : Position.CollinearOutside;
-            }
-
-            return doubledArea < 0
-                ? Position.Left
-                : Position.Right;
+            return a < b
+                ? v >= a && v <= b
+                : v >= b && v <= a;
         }
-
-        private static bool IsCollinear(this Segment u, Segment v)
-        {
-            var a = u.GetPointPositionOf(v.A);
-            var b = u.GetPointPositionOf(v.B);
-
-            return a.IsCollinearPosition() && b.IsCollinearPosition();
-        }
-
-        private static bool IsCollinearPosition(this Position position)
-        {
-            return position == Position.CollinearInside || position == Position.CollinearOutside || position == Position.IsEndPoint;
-        }
-
-        private static bool IsOnSegment(this Point point, Segment v)
-        {
-            var isOnSegment = point.X <= Math.Max(v.A.X, v.B.X)
-                          && point.X >= Math.Min(v.A.X, v.B.X)
-                          && point.Y <= Math.Max(v.A.Y, v.B.Y)
-                          && point.Y >= Math.Min(v.A.Y, v.B.Y);
-
-            return isOnSegment;
-        }
-
-        private static Intersection CalculateIntersectionOfNonCollinearSegments(Segment u, Segment v)
-        {
-            var si = u.CalculateIntersectionParameter(v);
-            var ti = v.CalculateIntersectionParameter(u);
-
-            if (si.IsInsideSegment() && ti.IsInsideSegment())
-            {
-                var i = u.CalculatePointOnLine(si);
-                return new SinglePointIntersection(i);
-            }
-
-            return new EmptyIntersection();
-        }
-
-        private static Intersection CalculateIntersectionOfCollinearSegments(Segment u, Segment v)
-        {
-            var positions = new[]
-            {
-                new { pos = v.GetPointPositionOf(u.A) , point = u.A },
-                new { pos = v.GetPointPositionOf(u.B) , point = u.B },
-                new { pos = u.GetPointPositionOf(v.A) , point = v.A },
-                new { pos = u.GetPointPositionOf(v.B) , point = v.B }
-            };
-
-            int inside = 0;
-            int outside = 0;
-            int endpoint = 0;
-
-            foreach (var p in positions)
-            {
-                switch (p.pos)
-                {
-                    case Position.CollinearOutside:
-                        outside++;
-                        break;
-                    case Position.CollinearInside:
-                        inside++;
-                        break;
-                    case Position.IsEndPoint:
-                        endpoint++;
-                        break;
-                    default:
-                        throw new Exception();
-                }
-            }
-
-            if (outside == 4)
-            {
-                return new EmptyIntersection();
-            }
-
-            if (inside > 0 || endpoint == 4)
-            {
-                return new SegmentIntersection();
-            }
-
-            if (endpoint == 2)
-            {
-                var point = positions.First(p => p.pos == Position.IsEndPoint).point;
-                return new SinglePointIntersection(point);
-            }
-
-            throw new Exception();
-        }
-
-        private static double CalculateIntersectionParameter(this Segment u, Segment v)
-        {
-            var p1 = u.A;
-            var p2 = u.B;
-            var p3 = v.A;
-            var p4 = v.B;
-            var t = 1d *
-                ((p1.X - p3.X) * (p3.Y - p4.Y) - (p1.Y - p3.Y) * (p3.X - p4.X))
-                /
-                ((p1.X - p2.X) * (p3.Y - p4.Y) - (p1.Y - p2.Y) * (p3.X - p4.X));
-
-            return t;
-        }
-
-        private static bool IsInsideSegment(this double d) => d >= 0 && d <= 1;
     }
-
-    //[DebuggerDisplay("{X},{Y}")]
-    //internal struct Point : IEquatable<Point>
-    //{
-    //    public Point(long x, long y)
-    //    {
-    //        this.X = x;
-    //        this.Y = y;
-    //    }
-
-    //    public long X { get; }
-    //    public long Y { get; }
-
-    //    public bool Equals(Point other)
-    //    {
-    //        return other.X == this.X && other.Y == this.Y;
-    //    }
-    //}
-
-    //[DebuggerDisplay("{}")]
-    //internal struct Segment
-    //{
-    //    public Segment(long[] coordinates) : this(coordinates[0], coordinates[1], coordinates[2], coordinates[3])
-    //    {
-    //    }
-
-    //    public Segment(long ax, long ay, long bx, long by) : this(new Point(ax, ay), new Point(bx, by))
-    //    {
-    //    }
-
-    //    public Segment(Point a, Point b)
-    //    {
-    //        if(a.X == b.X && a.Y == b.Y)
-    //        {
-    //            throw new Exception("single point");
-    //        }
-
-    //        if(a.X != b.X && a.Y != b.Y)
-    //        {
-    //            throw new Exception("not horizontal neither vertical");
-    //        }
-
-    //        this.A = a;
-    //        this.B = b;
-    //    }
-
-    //    public Point A { get; }
-    //    public Point B { get; }
-
-    //    public Point Left => this.A.X <= this.B.X ? this.A : this.B;
-    //    public Point Right => this.A.X > this.B.X ? this.A : this.B;
-
-    //    public Point Bottom => this.A.Y <= this.B.Y ? this.A : this.B;
-    //    public Point Top => this.A.Y > this.B.Y ? this.A : this.B;
-
-    //    public bool IsHorizontal => this.A.Y == this.B.Y;
-    //    public bool IsVertical => this.A.X == this.B.X;
-    //}
 
     //internal static class Tools
     //{
@@ -498,7 +299,7 @@ namespace VerticalHorizontalSegments
 
     //    private static bool Insersects(this Segment segment, Segment other)
     //    {
-    //        if(segment.IsHorizontal == other.IsHorizontal)
+    //        if (segment.IsHorizontal == other.IsHorizontal)
     //        {
     //            return ParallelIntersection(segment, other);
     //        }
