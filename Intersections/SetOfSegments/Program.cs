@@ -149,8 +149,14 @@ namespace SetOfSegments
     {
         public static IEnumerable<Intersection> FindIntersections(this IEnumerable<Segment> segments)
         {
+            var intersections = new List<Intersection>();
+            return intersections;
+        }
+
+        public static IEnumerable<Intersection> FindIntersectionsExtremelySlow(this IEnumerable<Segment> segments)
+        {
             var events = segments
-                .SelectMany(s => new[] { new Event(s.A.X, s), new Event(s.B.X, s) })
+                .SelectMany(s => new[] { new Event(s.A.X, s, EventType.In), new Event(s.B.X, s, EventType.Out) })
                 .OrderBy(e => e.Time)
                 .ToList();
 
@@ -178,7 +184,7 @@ namespace SetOfSegments
         public static IEnumerable<Intersection> FindIntersectionsSlow(this IEnumerable<Segment> segments)
         {
             var events = segments
-                .SelectMany(s => new[] { new Event(s.A.X, s), new Event(s.B.X, s) })
+                .SelectMany(s => new[] { new Event(s.A.X, s, EventType.In), new Event(s.B.X, s, EventType.Out) })
                 .OrderByDescending(e => e.Time)
                 .ToList();
 
@@ -290,20 +296,45 @@ namespace SetOfSegments
         public Segment V { get; }
     }
 
+    enum EventType
+    {
+        In,
+        Out,
+        Intersection
+    }
+
     internal class Event : IComparable<Event>
     {
-        public Event(long time, Segment segment)
+        public Event(long time, Segment segment, EventType eventType)
         {
             this.Time = time;
             this.Segment = segment;
+            this.EventType = eventType;
         }
 
         public long Time { get; }
         public Segment Segment { get; }
+        public EventType EventType { get; }
 
         public int CompareTo(Event other)
         {
             return Math.Sign(this.Time - other.Time);
+        }
+    }
+
+    internal class SweepStatus2
+    {
+        private SortedList<long, Segment> _status = new SortedList<long, Segment>();
+
+        public IEnumerable<Intersection> Add(Segment segment)
+        {
+
+            return new Intersection[0];
+        }
+
+        public IEnumerable<Intersection> Remove(Segment segment)
+        {
+            return new Intersection[0];
         }
     }
 
