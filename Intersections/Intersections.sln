@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SegmentIntersection", "Segm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerticalHorizontalSegments", "VerticalHorizontalSegments\VerticalHorizontalSegments.csproj", "{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SetOfSegments", "SetOfSegments\SetOfSegments.csproj", "{4A4DF965-222D-487D-B91C-D9B98324708C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{109BEB7D-F98D-4D2D-9538-80A171ECE8F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A4DF965-222D-487D-B91C-D9B98324708C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A4DF965-222D-487D-B91C-D9B98324708C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A4DF965-222D-487D-B91C-D9B98324708C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A4DF965-222D-487D-B91C-D9B98324708C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
