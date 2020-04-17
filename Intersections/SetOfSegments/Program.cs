@@ -118,8 +118,8 @@ namespace SetOfSegments
         public Segment(int id, Point A, Point B)
         {
             var points = new[] { A, B }
-                .OrderByDescending(p => p.Y)
-                .ThenBy(p => p.X)
+                .OrderBy(p => p.X)
+                .ThenBy(p => p.Y)
                 .ToArray();
 
             this.Id = id;
@@ -128,8 +128,8 @@ namespace SetOfSegments
         }
 
         public int Id { get; }
-        public Point A { get; } // upper left
-        public Point B { get; } // bottom right
+        public Point A { get; } // left bottom
+        public Point B { get; } // right top
 
         public Point CalculatePointOnLine(double t)
         {
@@ -149,14 +149,36 @@ namespace SetOfSegments
     {
         public static IEnumerable<Intersection> FindIntersections(this IEnumerable<Segment> segments)
         {
+            var events = segments
+                .SelectMany(s => new[] { new Event(s.A.X, s), new Event(s.B.X, s) })
+                .OrderBy(e => e.Time)
+                .ToList();
+
             var intersections = new List<Intersection>();
+            var status = new SweepStatus();
+
+            while (events.Count > 0)
+            {
+                var segment = events[0].Segment;
+                events.RemoveAt(0);
+
+                if (!status.Contains(segment))
+                {
+                    status.Add(segment);
+                    continue;
+                }
+
+                var intr = status.FindIntersectionsAndRemove(segment).ToArray();
+                intersections.AddRange(intr);
+            }
+
             return intersections;
         }
 
         public static IEnumerable<Intersection> FindIntersectionsSlow(this IEnumerable<Segment> segments)
         {
             var events = segments
-                .SelectMany(s => new[] { new Event(s.A.Y, s), new Event(s.B.Y, s) })
+                .SelectMany(s => new[] { new Event(s.A.X, s), new Event(s.B.X, s) })
                 .OrderByDescending(e => e.Time)
                 .ToList();
 
@@ -189,7 +211,7 @@ namespace SetOfSegments
             return intersections;
         }
 
-        private static bool Intersects(this Segment u, Segment v)
+        public static bool Intersects(this Segment u, Segment v)
         {
             var aP = u.GetPointPositionOf(v.A);
             var bP = u.GetPointPositionOf(v.B);
@@ -287,32 +309,75 @@ namespace SetOfSegments
 
     internal class SweepStatus
     {
-        private SortedDictionary<long, SortedDictionary<long, Segment>> _status = new SortedDictionary<long, SortedDictionary<long, Segment>>();
+                            //x              y
+        private SortedList<long, SortedList<long, Segment>> _status = new SortedList<long, SortedList<long, Segment>>();
 
         public void Add(Segment s)
         {
-            if (!_status.ContainsKey(s.A.Y))
+            if(!_status.ContainsKey(s.A.X))
             {
-                _status.Add(s.A.Y, new SortedDictionary<long, Segment>());
+                _status.Add(s.A.X, new SortedList<long, Segment>());
             }
 
-            _status[s.A.Y].Add(s.A.X, s);
+            _status[s.A.X].Add(s.A.Y, s);
         }
 
-        public bool Exists(Segment s)
+        public bool Contains(Segment s)
         {
-            if (!_status.ContainsKey(s.A.Y))
+            if (!_status.ContainsKey(s.A.X))
             {
                 return false;
             }
 
-            return _status[s.A.Y].ContainsKey(s.A.X);
+            return _status[s.A.X].ContainsKey(s.A.Y);
         }
 
         public IEnumerable<Intersection> FindIntersectionsAndRemove(Segment s)
         {
+            var intersections = new List<Intersection>();
 
-            return new Intersection[0];
+            var currentIndex = _status.IndexOfKey(s.A.X);
+            this.Remove(s);
+
+            while(currentIndex >= 0)
+            {
+                var checkForIntersection = _status.ElementAt(currentIndex);
+                foreach(var v in checkForIntersection.Value)
+                {
+                    if (s.Intersects(v.Value))
+                    {
+                        intersections.Add(new Intersection(s, v.Value));
+                    }
+                }
+                currentIndex--;
+            }
+
+            currentIndex = _status.IndexOfKey(s.A.X) + 1;
+            while(currentIndex < _status.Count)
+            {
+                var checkForIntersection = _status.ElementAt(currentIndex);
+                if(checkForIntersection.Key > s.B.X)
+                {
+                    break;
+                }
+
+                foreach (var v in checkForIntersection.Value)
+                {
+                    if (s.Intersects(v.Value))
+                    {
+                        intersections.Add(new Intersection(s, v.Value));
+                    }
+                }
+
+                currentIndex++;
+            }
+
+            return intersections;
+        }
+
+        private void Remove(Segment s)
+        {
+            _status[s.A.X].Remove(s.A.Y);
         }
     }
 }

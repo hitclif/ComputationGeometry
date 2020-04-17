@@ -41,8 +41,22 @@ namespace Tests
             Execute(segments, 13);
         }
 
-        private void Execute(IEnumerable<Segment> segments, int expectedCount)
+        [TestMethod]
+        public void Simple1()
         {
+            var segments = new[]
+            {
+                new Segment(1, 0, 3, 3, 0),
+                new Segment(2, 0, 0, 3,3)
+            };
+
+            Execute(segments, 1);
+        }
+
+        private void Execute(IReadOnlyCollection<Segment> segments, int expectedCount)
+        {
+            var svg = segments.ToSvg();
+
             var intersections = segments.FindIntersections().ToArray();
             Console.WriteLine("Intersections count: {0}", intersections.Length);
 
