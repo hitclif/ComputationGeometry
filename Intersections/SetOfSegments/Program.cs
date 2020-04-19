@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SetOfSegments
 {
-    class Program
+    static class Program
     {
         static void Main(string[] args)
         {
@@ -17,12 +15,12 @@ namespace SetOfSegments
             var segments = ReadSegments();
 #endif
 
-            var intersections = segments
+            var intersections = new SweepLine(segments)
                 .FindIntersections()
                 .ToArray();
 
             Console.WriteLine(intersections.Length);
-            foreach(var intersection in intersections)
+            foreach (var intersection in intersections)
             {
                 Console.WriteLine(intersection.U.ToString() + " " + intersection.V.ToString());
             }
@@ -42,12 +40,12 @@ namespace SetOfSegments
             yield return new Segment(0, 29, 48, 30, 13);
             yield return new Segment(1, 49, 57, -68, -24);
             yield return new Segment(2, 17, -30, 55, 16);
-            yield return new Segment(3, 19, -61, 91, - 2);
-            yield return new Segment(4, 44, - 22, 21, 73);
+            yield return new Segment(3, 19, -61, 91, -2);
+            yield return new Segment(4, 44, -22, 21, 73);
             yield return new Segment(5, -68, -38, -77, 90);
             yield return new Segment(6, -74, 84, 55, -32);
             yield return new Segment(7, 26, 72, -91, 64);
-            yield return new Segment(8, -21, - 41, - 3, 75);
+            yield return new Segment(8, -21, -41, -3, 75);
         }
 
         private static IEnumerable<Segment> ReadSegments()
@@ -64,9 +62,11 @@ namespace SetOfSegments
         }
     }
 
-    [DebuggerDisplay("{X},{Y}")]
+    [DebuggerDisplay("[{X},{Y}]")]
     public struct Point
     {
+        public static readonly Point Empty = new Point(long.MinValue, long.MinValue);
+
         public Point(long x, long y)
         {
             this.X = x;
@@ -97,20 +97,25 @@ namespace SetOfSegments
             return a.X == b.X && a.Y == b.Y;
         }
 
-        public static long operator *(Point a, Point b)
-        {
-            return a.X * b.X + a.Y * b.Y;
-        }
-
         public override string ToString()
         {
             return X + " " + Y;
         }
+
+        public override int GetHashCode()
+        {
+            int hashCode = 1861411795;
+            hashCode = hashCode * -1521134295 + this.X.GetHashCode();
+            hashCode = hashCode * -1521134295 + this.Y.GetHashCode();
+            return hashCode;
+        }
     }
 
-    [DebuggerDisplay("{A},{B}")]
-    public struct Segment
+    [DebuggerDisplay("S{Id}: {A},{B}")]
+    public class Segment
     {
+        public static readonly Segment Empty = new Segment(-1, long.MinValue, long.MinValue, long.MaxValue, long.MaxValue);
+
         public Segment(int id, long ax, long ay, long bx, long by) : this(id, new Point(ax, ay), new Point(bx, by))
         {
         }
@@ -131,12 +136,45 @@ namespace SetOfSegments
         public Point A { get; } // left bottom
         public Point B { get; } // right top
 
+        public Point CalculatePointAtX(long x)
+        {
+            var t = 1d * (x - A.X) / (B.X - A.X);
+            var py = (long)(this.A.Y + t * (this.B.Y - this.A.Y));
+
+            return new Point(x, py);
+        }
+
+        public long CalculateHeightAtX(long x)
+        {
+            return CalculatePointAtX(x).Y;
+        }
+
         public Point CalculatePointOnLine(double t)
         {
-            var x = A.X + (B.X - A.X) * t;
-            var y = A.Y + (B.Y - A.Y) * t;
+            var x = Math.Round(A.X + (B.X - A.X) * t);
+            var y = Math.Round(A.Y + (B.Y - A.Y) * t);
 
             return new Point((long)x, (long)y);
+        }
+
+        public Point Intersection(Segment other)
+        {
+            var p1 = this.A;
+            var p2 = this.B;
+            var p3 = other.A;
+            var p4 = other.B;
+            var t = 1d *
+                ((p1.X - p3.X) * (p3.Y - p4.Y) - (p1.Y - p3.Y) * (p3.X - p4.X))
+                /
+                ((p1.X - p2.X) * (p3.Y - p4.Y) - (p1.Y - p2.Y) * (p3.X - p4.X));
+
+            if(t< 0 || t > 1)
+            {
+                return Point.Empty;
+            }
+
+            var intersectionPoint = this.CalculatePointOnLine(t);
+            return intersectionPoint;
         }
 
         public override string ToString()
@@ -145,143 +183,61 @@ namespace SetOfSegments
         }
     }
 
-    public static class Tools
+    internal enum EventType
     {
-        public static IEnumerable<Intersection> FindIntersections(this IEnumerable<Segment> segments)
-        {
-            var intersections = new List<Intersection>();
-            return intersections;
-        }
-
-        public static IEnumerable<Intersection> FindIntersectionsExtremelySlow(this IEnumerable<Segment> segments)
-        {
-            var events = segments
-                .SelectMany(s => new[] { new Event(s.A.X, s, EventType.In), new Event(s.B.X, s, EventType.Out) })
-                .OrderBy(e => e.Time)
-                .ToList();
-
-            var intersections = new List<Intersection>();
-            var status = new SweepStatus();
-
-            while (events.Count > 0)
-            {
-                var segment = events[0].Segment;
-                events.RemoveAt(0);
-
-                if (!status.Contains(segment))
-                {
-                    status.Add(segment);
-                    continue;
-                }
-
-                var intr = status.FindIntersectionsAndRemove(segment).ToArray();
-                intersections.AddRange(intr);
-            }
-
-            return intersections;
-        }
-
-        public static IEnumerable<Intersection> FindIntersectionsSlow(this IEnumerable<Segment> segments)
-        {
-            var events = segments
-                .SelectMany(s => new[] { new Event(s.A.X, s, EventType.In), new Event(s.B.X, s, EventType.Out) })
-                .OrderByDescending(e => e.Time)
-                .ToList();
-
-            var intersections = new List<Intersection>();
-            var bag = new Dictionary<int, Segment>();
-
-            while(events.Count > 0)
-            {
-                var segment = events[0].Segment;
-                events.RemoveAt(0);
-
-                if (bag.ContainsKey(segment.Id))
-                {
-                    bag.Remove(segment.Id);
-                }
-                else
-                {
-                    foreach (var v in bag.Values)
-                    {
-                        if (segment.Intersects(v))
-                        {
-                            intersections.Add(new Intersection(segment, v));
-                        }
-                    }
-
-                    bag.Add(segment.Id, segment);
-                }
-            }
-
-            return intersections;
-        }
-
-        public static bool Intersects(this Segment u, Segment v)
-        {
-            var aP = u.GetPointPositionOf(v.A);
-            var bP = u.GetPointPositionOf(v.B);
-
-            if(aP == Position.CollinearInside || bP == Position.CollinearInside)
-            {
-                return true;
-            }
-
-            if(aP == bP)
-            {
-                return false;
-            }
-
-            var t = u.CalculateIntersectionParameter(v);
-            return t >= 0 && t <= 1;
-        }
-
-        private static Position GetPointPositionOf(this Segment v, Point point)
-        {
-            var doubledArea = (v.B.X - v.A.X) * (point.Y - v.A.Y) - (point.X - v.A.X) * (v.B.Y - v.A.Y);
-            if (doubledArea == 0)
-            {
-                return point.IsOnSegment(v)
-                    ? Position.CollinearInside
-                    : Position.CollinearOutside;
-            }
-
-            return doubledArea < 0
-                ? Position.Left
-                : Position.Right;
-        }
-
-        private static bool IsOnSegment(this Point point, Segment v)
-        {
-            var isOnSegment = point.X <= Math.Max(v.A.X, v.B.X)
-                          && point.X >= Math.Min(v.A.X, v.B.X)
-                          && point.Y <= Math.Max(v.A.Y, v.B.Y)
-                          && point.Y >= Math.Min(v.A.Y, v.B.Y);
-
-            return isOnSegment;
-        }
-
-        private static double CalculateIntersectionParameter(this Segment u, Segment v)
-        {
-            var p1 = u.A;
-            var p2 = u.B;
-            var p3 = v.A;
-            var p4 = v.B;
-            var t = 1d *
-                ((p1.X - p3.X) * (p3.Y - p4.Y) - (p1.Y - p3.Y) * (p3.X - p4.X))
-                /
-                ((p1.X - p2.X) * (p3.Y - p4.Y) - (p1.Y - p2.Y) * (p3.X - p4.X));
-
-            return t;
-        }
+        BeginSegment,
+        EndSegment,
+        Intersection
     }
 
-    enum Position
+    [DebuggerDisplay("{Time}:{EventType}: {Segment1}")]
+    internal class Event : IComparable<Event>, IEquatable<Event>
     {
-        Left,
-        Right,
-        CollinearOutside,
-        CollinearInside
+        private Event(EventType eventType, Point time, Segment segment1, Segment segment2, int intersectionOrder)
+        {
+            this.EventType = eventType;
+            this.Time = time;
+            this.Segment1 = segment1;
+            this.Segment2 = segment2;
+            this.IntersectionOrder = intersectionOrder;
+        }
+
+        public EventType EventType { get; }
+        public Point Time { get; }
+        public Segment Segment1 { get; }
+        public Segment Segment2 { get; }
+        public int IntersectionOrder { get; }
+
+        public int CompareTo(Event other)
+        {
+            if(this.Time.X != other.Time.X)
+            {
+                return Math.Sign(this.Time.X - other.Time.X);
+            }
+
+            return -Math.Sign(this.Time.Y - other.Time.Y);
+        }
+
+        public static Event BeginSegment(Segment segment)
+        {
+            return new Event(EventType.BeginSegment, segment.A, segment, Segment.Empty, 0);
+        }
+
+        public static Event EndSegment(Segment segment)
+        {
+            return new Event(EventType.EndSegment, segment.B, segment, Segment.Empty, 0);
+        }
+
+        public static Event Intersection(Point intersectionPoint, Segment above, Segment below, int intersectionOrder)
+        {
+            return new Event(EventType.Intersection, intersectionPoint, above, below, intersectionOrder);
+        }
+
+        public bool Equals(Event other)
+        {
+            return this.Segment1.Id == other.Segment1.Id
+                && this.Segment2.Id == other.Segment2.Id;
+        }
     }
 
     public class Intersection
@@ -296,119 +252,341 @@ namespace SetOfSegments
         public Segment V { get; }
     }
 
-    enum EventType
+    internal class EventQueue
     {
-        In,
-        Out,
-        Intersection
-    }
+        private List<Event> _events = new List<Event>();
 
-    internal class Event : IComparable<Event>
-    {
-        public Event(long time, Segment segment, EventType eventType)
+        public void Clear()
         {
-            this.Time = time;
-            this.Segment = segment;
-            this.EventType = eventType;
+            _events = new List<Event>();
         }
 
-        public long Time { get; }
-        public Segment Segment { get; }
-        public EventType EventType { get; }
+        public int Count => _events.Count;
 
-        public int CompareTo(Event other)
+        public void Enqueue(Event @event)
         {
-            return Math.Sign(this.Time - other.Time);
-        }
-    }
+            var index = _events.BinarySearch(@event);
 
-    internal class SweepStatus2
-    {
-        private SortedList<long, Segment> _status = new SortedList<long, Segment>();
-
-        public IEnumerable<Intersection> Add(Segment segment)
-        {
-
-            return new Intersection[0];
-        }
-
-        public IEnumerable<Intersection> Remove(Segment segment)
-        {
-            return new Intersection[0];
-        }
-    }
-
-    internal class SweepStatus
-    {
-                            //x              y
-        private SortedList<long, SortedList<long, Segment>> _status = new SortedList<long, SortedList<long, Segment>>();
-
-        public void Add(Segment s)
-        {
-            if(!_status.ContainsKey(s.A.X))
+            if (index < 0)
             {
-                _status.Add(s.A.X, new SortedList<long, Segment>());
+                index = ~index;
             }
 
-            _status[s.A.X].Add(s.A.Y, s);
+            _events.Insert(index, @event);
         }
 
-        public bool Contains(Segment s)
+        public Event Dequeue()
         {
-            if (!_status.ContainsKey(s.A.X))
+            var @event = _events[0];
+            _events.RemoveAt(0);
+            return @event;
+        }
+
+        public void RemoveFuture(Event @event)
+        {
+            var index = _events.BinarySearch(@event);
+
+            if (index < 0)
             {
-                return false;
+                return;
             }
 
-            return _status[s.A.X].ContainsKey(s.A.Y);
+            var i = this.IndexOfEvent(@event, index);
+            if(i == -1)
+            {
+                return;
+            }
+
+            _events.RemoveAt(i);
         }
 
-        public IEnumerable<Intersection> FindIntersectionsAndRemove(Segment s)
+        private int IndexOfEvent(Event @event, int fromIndex)
         {
-            var intersections = new List<Intersection>();
-
-            var currentIndex = _status.IndexOfKey(s.A.X);
-            this.Remove(s);
-
-            while(currentIndex >= 0)
+            var temp = fromIndex;
+            while (temp < _events.Count)
             {
-                var checkForIntersection = _status.ElementAt(currentIndex);
-                foreach(var v in checkForIntersection.Value)
+                if (_events[temp].Time.X > @event.Time.X)
                 {
-                    if (s.Intersects(v.Value))
-                    {
-                        intersections.Add(new Intersection(s, v.Value));
-                    }
-                }
-                currentIndex--;
-            }
-
-            currentIndex = _status.IndexOfKey(s.A.X) + 1;
-            while(currentIndex < _status.Count)
-            {
-                var checkForIntersection = _status.ElementAt(currentIndex);
-                if(checkForIntersection.Key > s.B.X)
-                {
-                    break;
+                    return -1;
                 }
 
-                foreach (var v in checkForIntersection.Value)
+                if (_events[temp].Equals(@event))
                 {
-                    if (s.Intersects(v.Value))
-                    {
-                        intersections.Add(new Intersection(s, v.Value));
-                    }
+                    return temp;
                 }
 
-                currentIndex++;
+                temp++;
             }
 
-            return intersections;
+            return -1;
+        }
+    }
+
+    internal class Status
+    {
+        private List<Segment> _status = new List<Segment>();
+
+        public int Length => _status.Count;
+
+        public void Clear()
+        {
+            _status = new List<Segment>();
         }
 
-        private void Remove(Segment s)
+        public Segment GetAtIndex(int index)
         {
-            _status[s.A.X].Remove(s.A.Y);
+            return _status[index];
+        }
+
+        public int Insert(Segment segment)
+        {
+            var index = this.FindIndexToInsert(segment);
+            _status.Insert(index, segment);
+            return index;
+        }
+
+        public void RemoveAtIndex(int index)
+        {
+            _status.RemoveAt(index);
+        }
+
+        public int FindIndex(Segment segment, long time)
+        {
+            var index = this.FindIndexOfSegmentAtTime(time, segment);
+            return index;
+        }
+
+        public void Swap(Segment segment1, Segment segment2, long time)
+        {
+            var indexOf1 = this.FindIndexOfSegmentAtTime(time, segment1);
+
+            _status.RemoveAt(indexOf1);
+            _status.Insert(indexOf1 + 1, segment1);
+        }
+
+        private int FindIndexToInsert(Segment segment)
+        {
+            var comparer = new SegmentTimeComparer(segment.A.X);
+            var index = _status.BinarySearch(segment, comparer);
+            if (index < 0)
+            {
+                index = ~index;
+            }
+
+            return index;
+        }
+
+        private int FindIndexOfSegmentAtTime(long time, Segment segment)
+        {
+            var comparer = new SegmentTimeComparer(time);
+            var index = _status.BinarySearch(segment, comparer);
+            if (index < 0)
+            {
+                index = ~index;
+            }
+
+            if (_status[index] == segment)
+            {
+                return index;
+            }
+
+            if (index > 0 && _status[index - 1] == segment)
+            {
+                return index - 1;
+            }
+
+            if (index < _status.Count - 1 && _status[index + 1] == segment)
+            {
+                return index + 1;
+            }
+
+            throw new Exception("FindIndex failed");
+        }
+
+        public override string ToString()
+        {
+            return string.Join(" ", _status.Select(s => s.ToString()).ToArray());
+        }
+    }
+
+    public class SweepLine
+    {
+        private int _interesectionEventTag = 0;
+        private readonly IEnumerable<Segment> _segments;
+
+        private List<Intersection> _intersections = new List<Intersection>();
+        private Status _status = new Status();
+        private EventQueue _eventQueue = new EventQueue();
+
+        public SweepLine(IEnumerable<Segment> segments)
+        {
+            _segments = segments;
+        }
+
+        public IEnumerable<Intersection> FindIntersections()
+        {
+            _status.Clear();
+            _intersections = new List<Intersection>();
+
+            this.PrepereEventQueue();
+
+            while(_eventQueue.Count > 0)
+            {
+                var @event = _eventQueue.Dequeue();
+
+                switch (@event.EventType)
+                {
+                    case EventType.BeginSegment:
+                        this.InsertToStatus(@event);
+                        break;
+                    case EventType.EndSegment:
+                        this.RemoveFromStatus(@event);
+                        break;
+                    case EventType.Intersection:
+                        this.HandleIntersection(@event);
+                        break;
+                }
+            }
+
+            return _intersections.ToArray();
+        }
+
+        private void PrepereEventQueue()
+        {
+            var events = _segments
+                .SelectMany(s => new[] { Event.BeginSegment(s), Event.EndSegment(s) })
+                //.OrderBy(e => e.Time.X)
+                //.ThenBy(e => e.Time.Y)
+                .ToArray();
+
+            foreach (var @event in events)
+            {
+                _eventQueue.Enqueue(@event);
+            }
+        }
+
+        private void InsertToStatus(Event @event)
+        {
+            var index = _status.Insert(@event.Segment1);
+
+            if(index > 0 && index < _status.Length - 1)
+            {
+                this.RemovePotentialFutureEvent(_status.GetAtIndex(index - 1), _status.GetAtIndex(index + 1));
+            }
+
+            if(index > 0)
+            {
+                this.EnqueuePotentialIntersectionEvent(_status.GetAtIndex(index - 1), _status.GetAtIndex(index));
+            }
+
+            if (index < _status.Length - 1)
+            {
+                this.EnqueuePotentialIntersectionEvent(_status.GetAtIndex(index), _status.GetAtIndex(index + 1));
+            }
+        }
+
+        private void RemoveFromStatus(Event @event)
+        {
+            var index = _status.FindIndex(@event.Segment1, @event.Time.X);
+
+            if(index > 0 && index < _status.Length - 1)
+            {
+                this.EnqueuePotentialIntersectionEvent(_status.GetAtIndex(index - 1), _status.GetAtIndex(index + 1));
+            }
+
+            _status.RemoveAtIndex(index);
+        }
+
+        private void HandleIntersection(Event @event)
+        {
+            var intersection = new Intersection(@event.Segment1, @event.Segment2);
+            _intersections.Add(intersection);
+
+            var index = _status.FindIndex(@event.Segment1, @event.Time.X); // this.FindIndexOfSegmentAtTime(@event.Time, @event.Segment1);
+
+            if(index > 0)
+            {
+                this.RemovePotentialFutureEvent(_status.GetAtIndex(index - 1), _status.GetAtIndex(index));
+            }
+            if(index < _status.Length - 2)
+            {
+                this.RemovePotentialFutureEvent(_status.GetAtIndex(index + 1), _status.GetAtIndex(index + 2));
+            }
+
+            if (index > 0 && index < _status.Length - 1)
+            {
+                this.EnqueuePotentialIntersectionEvent(_status.GetAtIndex(index - 1), _status.GetAtIndex(index + 1));
+            }
+
+            if(index < _status.Length - 2)
+            {
+                this.EnqueuePotentialIntersectionEvent(_status.GetAtIndex(index), _status.GetAtIndex(index + 2));
+            }
+
+            _status.Swap(@event.Segment1, @event.Segment2, @event.Time.X);
+        }
+
+        private void RemovePotentialFutureEvent(Segment above, Segment below)
+        {
+            var @event = this.CreateEvent(above, below);
+            if (@event == null)
+            {
+                return;
+            }
+
+            _eventQueue.RemoveFuture(@event);
+        }
+
+        private void EnqueuePotentialIntersectionEvent(Segment above, Segment below)
+        {
+            var @event = this.CreateEvent(above, below);
+            if(@event == null)
+            {
+                return;
+            }
+
+            _eventQueue.Enqueue(@event);
+        }
+
+        private Event CreateEvent(Segment above, Segment below)
+        {
+            var compare = new SegmentTimeComparer(above.A.X).Compare(above, below);
+
+            if (compare == 0)
+            {
+                throw new Exception("compare issue");
+            }
+
+            if (compare > 0)
+            {
+                return null;
+            }
+
+            var intersectionPoint = above.Intersection(below);
+            if (intersectionPoint == Point.Empty)
+            {
+                return null;
+            }
+
+            _interesectionEventTag++;
+            return Event.Intersection(intersectionPoint, above, below, _interesectionEventTag);
+        }
+    }
+
+    internal class SegmentTimeComparer : IComparer<Segment>
+    {
+        private readonly long _time;
+
+        public SegmentTimeComparer(long time)
+        {
+            _time = time;
+        }
+
+        public int Compare(Segment x, Segment y)
+        {
+            var a = x.CalculateHeightAtX(_time);
+            var b = y.CalculateHeightAtX(_time);
+            return -Math.Sign(a - b);
         }
     }
 }

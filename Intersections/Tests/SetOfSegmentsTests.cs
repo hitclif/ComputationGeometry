@@ -14,9 +14,9 @@ namespace Tests
         {
             var segments = new[]
             {
-                new Segment(0, -7, -3, 2, 6),
-                new Segment(1, -7, 2, 9, -2),
-                new Segment(2, 3, -3, -3, 6)
+                new Segment(1, -7, -3, 2, 6),
+                new Segment(2, -7, 2, 9, -2),
+                new Segment(3, 3, -3, -3, 6)
             };
 
             Execute(segments, 3);
@@ -27,15 +27,15 @@ namespace Tests
         {
             var segments = new[]
             {
-                new Segment(0, 29, 48, 30, 13),
-                new Segment(1, 49, 57, -68, -24),
-                new Segment(2, 17, -30, 55, 16),
-                new Segment(3, 19, -61, 91, -2),
-                new Segment(4, 44, -22, 21, 73),
-                new Segment(5, -68, -38, -77, 90),
-                new Segment(6, -74, 84, 55, -32),
-                new Segment(7, 26, 72, -91, 64),
-                new Segment(8, -21, -41, -3, 75)
+                new Segment(1, 29, 48, 30, 13),
+                new Segment(2, 49, 57, -68, -24),
+                new Segment(3, 17, -30, 55, 16),
+                new Segment(4, 19, -61, 91, -2),
+                new Segment(5, 44, -22, 21, 73),
+                new Segment(6, -68, -38, -77, 90),
+                new Segment(7, -74, 84, 55, -32),
+                new Segment(8, 26, 72, -91, 64),
+                new Segment(9, -21, -41, -3, 75)
             };
 
             Execute(segments, 13);
@@ -57,7 +57,7 @@ namespace Tests
         {
             var svg = segments.ToSvg();
 
-            var intersections = segments.FindIntersections().ToArray();
+            var intersections = new SweepLine(segments).FindIntersections().ToArray();
             Console.WriteLine("Intersections count: {0}", intersections.Length);
 
             foreach (var intersection in intersections)
