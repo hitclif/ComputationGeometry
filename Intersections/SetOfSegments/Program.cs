@@ -99,7 +99,7 @@ namespace SetOfSegments
 
         public override string ToString()
         {
-            return "[X" + "," + Y + "]";
+            return X + "," + Y;
         }
 
         public override int GetHashCode()
@@ -198,6 +198,16 @@ namespace SetOfSegments
         public long Area2(Point point)
         {
             return (this.B.X - this.A.X) * (point.Y - this.A.Y) - (point.X - this.A.X) * (this.B.Y - this.A.Y);
+        }
+
+        public static Point CommonIntersectionPoint(Segment u, Segment v)
+        {
+            var pi1 = u.Intersection(v);
+            var pi2 = v.Intersection(u);
+
+            return pi1 == pi2 && pi1 != Point.Empty
+                ? pi1
+                : Point.Empty;
         }
 
         public override string ToString()
@@ -597,16 +607,14 @@ namespace SetOfSegments
             {
                 return null;
             }
-
-            var intersectionPoint1 = above.Intersection(below);
-            var intersectionPoint2 = below.Intersection(above);
-            if (intersectionPoint1 != intersectionPoint2 || intersectionPoint1 == Point.Empty)
+            var intersectionPoint = Segment.CommonIntersectionPoint(above, below);
+            if(intersectionPoint == Point.Empty)
             {
                 return null;
             }
 
             _interesectionEventTag++;
-            return Event.Intersection(intersectionPoint1, above, below, _interesectionEventTag);
+            return Event.Intersection(intersectionPoint, above, below, _interesectionEventTag);
         }
     }
 
@@ -621,9 +629,58 @@ namespace SetOfSegments
 
         public int Compare(Segment x, Segment y)
         {
-            var a = x.CalculateHeightAtX(_time);
-            var b = y.CalculateHeightAtX(_time);
-            return -Math.Sign(a - b);
+            var intersectionPoint = x.Intersection(y);
+
+            return intersectionPoint == Point.Empty
+                ? CompareNonIntersecting(x, y)
+                : CompareIntersecting(x, y, intersectionPoint);
+
+            //var p1 = x.B;
+            //var p2 = y.A;
+
+            //var a = x.CalculateHeightAtX(_time);
+            //var b = y.CalculateHeightAtX(_time);
+            //return -Math.Sign(a - b);
         }
+
+        private int CompareIntersecting(Segment x, Segment y, Point intersectionPoint)
+        {
+            if (_time == intersectionPoint.X)
+            {
+                return 0;
+            }
+
+            return _time < intersectionPoint.X
+                ? -Math.Sign(x.A.Y - y.A.Y)
+                : -Math.Sign(x.B.Y - y.B.Y);
+        }
+
+        private int CompareNonIntersecting(Segment x, Segment y)
+        {
+            if (this.IsWider(x, y) || this.IsWider(y, x))
+            {
+                return -Math.Sign(x.A.Y - y.A.Y);
+            }
+
+            if(x.A.X < y.A.X)
+            {
+                return -Math.Sign(x.B.Y - y.A.Y);
+            }
+            else
+            {
+                return -Math.Sign(x.A.Y - y.B.Y);
+            }
+        }
+
+        private bool IsWider(Segment u, Segment v)
+        {
+            return u.A.X <= v.A.X && u.B.X >= v.B.X;
+        }
+        //private bool PointIsBetween(long x, long a, long b)
+        //{
+        //    return a < b
+        //        ? x >= a && x <= b
+        //        : x >= b && x <= a;
+        //}
     }
 }
