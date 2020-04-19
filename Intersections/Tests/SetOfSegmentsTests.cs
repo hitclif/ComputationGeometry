@@ -42,6 +42,24 @@ namespace Tests
         }
 
         [TestMethod]
+        public void Case3()
+        {
+            var segments = new[]
+            {
+                new Segment(1, -87, 83, 69, 70),
+                new Segment(2, -31, -17, -8, 72),
+                new Segment(3, 35, -4, -37, 37),
+                new Segment(4, -80, -36, 96, 43),
+                new Segment(5, 16, -95, 42, 90),
+                new Segment(6, 20, -76, 48, -55),
+                new Segment(7, 99, 0, 37, -28),
+                new Segment(8, -33, -85, 4, -45),
+                new Segment(9, 47, 2, 16, -9)
+            };
+
+            Execute(segments, 8);
+        }
+        [TestMethod]
         public void Simple1()
         {
             var segments = new[]

@@ -94,12 +94,12 @@ namespace SetOfSegments
 
         public static bool operator !=(Point a, Point b)
         {
-            return a.X == b.X && a.Y == b.Y;
+            return !(a == b);
         }
 
         public override string ToString()
         {
-            return X + " " + Y;
+            return "[X" + "," + Y + "]";
         }
 
         public override int GetHashCode()
@@ -116,6 +116,8 @@ namespace SetOfSegments
     {
         public static readonly Segment Empty = new Segment(-1, long.MinValue, long.MinValue, long.MaxValue, long.MaxValue);
 
+        private readonly double _tan;
+
         public Segment(int id, long ax, long ay, long bx, long by) : this(id, new Point(ax, ay), new Point(bx, by))
         {
         }
@@ -130,6 +132,8 @@ namespace SetOfSegments
             this.Id = id;
             this.A = points[0];
             this.B = points[1];
+
+            _tan = 1d * (this.B.Y - this.A.Y) / (this.B.X - this.A.X);
         }
 
         public int Id { get; }
@@ -146,9 +150,9 @@ namespace SetOfSegments
 
         public double CalculateHeightAtX(long x)
         {
-            var t = 1d * (x - A.X) / (B.X - A.X);
-            var v = this.A.Y + t * (this.B.Y - this.A.Y);
-
+            //var t = 1d * (x - A.X) / (B.X - A.X);
+            //var v = this.A.Y + t * (this.B.Y - this.A.Y);
+            var v = this.A.Y + _tan * (x - this.A.X);
             return v;
         }
 
@@ -166,6 +170,7 @@ namespace SetOfSegments
             var p2 = this.B;
             var p3 = other.A;
             var p4 = other.B;
+
             var t = 1d *
                 ((p1.X - p3.X) * (p3.Y - p4.Y) - (p1.Y - p3.Y) * (p3.X - p4.X))
                 /
@@ -178,6 +183,21 @@ namespace SetOfSegments
 
             var intersectionPoint = this.CalculatePointOnLine(t);
             return intersectionPoint;
+        }
+
+        public bool IsPointOnSegment(Point point)
+        {
+            var isOnSegment = point.X <= Math.Max(this.A.X, this.B.X)
+                          && point.X >= Math.Min(this.A.X, this.B.X)
+                          && point.Y <= Math.Max(this.A.Y, this.B.Y)
+                          && point.Y >= Math.Min(this.A.Y, this.B.Y);
+
+            return isOnSegment;
+        }
+
+        public long Area2(Point point)
+        {
+            return (this.B.X - this.A.X) * (point.Y - this.A.Y) - (point.X - this.A.X) * (this.B.Y - this.A.Y);
         }
 
         public override string ToString()
@@ -193,7 +213,7 @@ namespace SetOfSegments
         Intersection
     }
 
-    [DebuggerDisplay("{Time}:{EventType}: {Segment1}")]
+    [DebuggerDisplay("{Time}:{EventName}")]
     internal class Event : IComparable<Event>, IEquatable<Event>
     {
         private Event(EventType eventType, Point time, Segment segment1, Segment segment2, int intersectionOrder)
@@ -211,9 +231,27 @@ namespace SetOfSegments
         public Segment Segment2 { get; }
         public int IntersectionOrder { get; }
 
+        public string EventName 
+        {
+            get
+            {
+                switch (this.EventType)
+                {
+                    case EventType.BeginSegment:
+                        return "Begin S" + this.Segment1.Id;
+                    case EventType.EndSegment:
+                        return "End S" + this.Segment1.Id;
+                    case EventType.Intersection:
+                        return "Intersection: S" + this.Segment1.Id + "xS" + this.Segment2.Id;
+                }
+
+                return string.Empty;
+            }
+        }
+
         public int CompareTo(Event other)
         {
-            if(this.Time.X != other.Time.X)
+            if (this.Time.X != other.Time.X)
             {
                 return Math.Sign(this.Time.X - other.Time.X);
             }
@@ -560,14 +598,15 @@ namespace SetOfSegments
                 return null;
             }
 
-            var intersectionPoint = above.Intersection(below);
-            if (intersectionPoint == Point.Empty)
+            var intersectionPoint1 = above.Intersection(below);
+            var intersectionPoint2 = below.Intersection(above);
+            if (intersectionPoint1 != intersectionPoint2 || intersectionPoint1 == Point.Empty)
             {
                 return null;
             }
 
             _interesectionEventTag++;
-            return Event.Intersection(intersectionPoint, above, below, _interesectionEventTag);
+            return Event.Intersection(intersectionPoint1, above, below, _interesectionEventTag);
         }
     }
 
