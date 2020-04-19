@@ -272,7 +272,7 @@
 
 //            var intersect = u.CalculatePointOnLine(t);
 
-//            return new Tuple<bool, Point>(false, intersect);
+//            return new Tuple<bool, Point>(true, intersect);
 //        }
 
 //        private static Position GetPointPositionOf(this Segment v, Point point)

@@ -136,17 +136,20 @@ namespace SetOfSegments
         public Point A { get; } // left bottom
         public Point B { get; } // right top
 
-        public Point CalculatePointAtX(long x)
+        //public Point CalculatePointAtX(long x)
+        //{
+        //    var t = 1d * (x - A.X) / (B.X - A.X);
+        //    var py = (long)Math.Round(this.A.Y + t * (this.B.Y - this.A.Y));
+
+        //    return this.CalculatePointOnLine(t);
+        //}
+
+        public double CalculateHeightAtX(long x)
         {
             var t = 1d * (x - A.X) / (B.X - A.X);
-            var py = (long)(this.A.Y + t * (this.B.Y - this.A.Y));
+            var v = this.A.Y + t * (this.B.Y - this.A.Y);
 
-            return new Point(x, py);
-        }
-
-        public long CalculateHeightAtX(long x)
-        {
-            return CalculatePointAtX(x).Y;
+            return v;
         }
 
         public Point CalculatePointOnLine(double t)
@@ -551,11 +554,6 @@ namespace SetOfSegments
         private Event CreateEvent(Segment above, Segment below)
         {
             var compare = new SegmentTimeComparer(above.A.X).Compare(above, below);
-
-            if (compare == 0)
-            {
-                throw new Exception("compare issue");
-            }
 
             if (compare > 0)
             {

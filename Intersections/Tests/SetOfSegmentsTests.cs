@@ -53,6 +53,30 @@ namespace Tests
             Execute(segments, 1);
         }
 
+        [TestMethod]
+        public void EndPointRight()
+        {
+            var segments = new[]
+            {
+                new Segment(1, 5, 5, 10, 5),
+                new Segment(2, 10, 5, 11, 11)
+            };
+
+            Execute(segments, 1);
+        }
+
+        [TestMethod]
+        public void EndPointLeft()
+        {
+            var segments = new[]
+            {
+                new Segment(1, 5, 5, 10, 5),
+                new Segment(2, 5, 5, 11, 11)
+            };
+
+            Execute(segments, 1);
+        }
+
         private void Execute(IReadOnlyCollection<Segment> segments, int expectedCount)
         {
             var svg = segments.ToSvg();
