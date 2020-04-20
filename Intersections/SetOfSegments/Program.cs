@@ -223,28 +223,26 @@ namespace SetOfSegments
 
     internal enum EventType
     {
-        BeginSegment,
-        EndSegment,
-        Intersection
+        BeginSegment = 0,
+        Intersection = 1,
+        EndSegment = 2
     }
 
     [DebuggerDisplay("{Time}:{EventName}")]
     internal class Event : IComparable<Event>, IEquatable<Event>
     {
-        private Event(EventType eventType, Point time, Segment segment1, Segment segment2, int intersectionOrder)
+        private Event(EventType eventType, Point time, Segment segment1, Segment segment2)
         {
             this.EventType = eventType;
             this.Time = time;
             this.Segment1 = segment1;
             this.Segment2 = segment2;
-            this.IntersectionOrder = intersectionOrder;
         }
 
         public EventType EventType { get; }
         public Point Time { get; }
         public Segment Segment1 { get; }
         public Segment Segment2 { get; }
-        public int IntersectionOrder { get; }
 
         public string EventName 
         {
@@ -271,22 +269,27 @@ namespace SetOfSegments
                 return Math.Sign(this.Time.X - other.Time.X);
             }
 
+            if(this.EventType != other.EventType)
+            {
+                return this.EventType - other.EventType;
+            }
+
             return -Math.Sign(this.Time.Y - other.Time.Y);
         }
 
         public static Event BeginSegment(Segment segment)
         {
-            return new Event(EventType.BeginSegment, segment.A, segment, Segment.Empty, 0);
+            return new Event(EventType.BeginSegment, segment.A, segment, Segment.Empty);
         }
 
         public static Event EndSegment(Segment segment)
         {
-            return new Event(EventType.EndSegment, segment.B, segment, Segment.Empty, 0);
+            return new Event(EventType.EndSegment, segment.B, segment, Segment.Empty);
         }
 
-        public static Event Intersection(Point intersectionPoint, Segment above, Segment below, int intersectionOrder)
+        public static Event Intersection(Point intersectionPoint, Segment above, Segment below)
         {
-            return new Event(EventType.Intersection, intersectionPoint, above, below, intersectionOrder);
+            return new Event(EventType.Intersection, intersectionPoint, above, below);
         }
 
         public bool Equals(Event other)
@@ -489,7 +492,6 @@ namespace SetOfSegments
 
     public class SweepLine
     {
-        private int _interesectionEventTag = 0;
         private readonly IEnumerable<Segment> _segments;
         private readonly bool _log;
         private List<Intersection> _intersections = new List<Intersection>();
@@ -536,8 +538,6 @@ namespace SetOfSegments
 
             var events = _segments
                 .SelectMany(s => new[] { Event.BeginSegment(s), Event.EndSegment(s) })
-                //.OrderBy(e => e.Time.X)
-                //.ThenBy(e => e.Time.Y)
                 .ToArray();
 
             foreach (var @event in events)
@@ -643,8 +643,7 @@ namespace SetOfSegments
                 return null;
             }
 
-            _interesectionEventTag++;
-            return Event.Intersection(intersectionPoint, above, below, _interesectionEventTag);
+            return Event.Intersection(intersectionPoint, above, below);
         }
     }
 
@@ -708,11 +707,5 @@ namespace SetOfSegments
         {
             return u.A.X <= v.A.X && u.B.X >= v.B.X;
         }
-        //private bool PointIsBetween(long x, long a, long b)
-        //{
-        //    return a < b
-        //        ? x >= a && x <= b
-        //        : x >= b && x <= a;
-        //}
     }
 }
