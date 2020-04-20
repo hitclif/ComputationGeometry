@@ -59,6 +59,84 @@ namespace Tests
 
             Execute(segments, 8);
         }
+
+        [TestMethod]
+        public void Case5()
+        {
+            var segments = new[]
+            {
+                new Segment(1, -68,75,28,-5),
+                new Segment(1, 48,-88,-4,-9),
+                new Segment(1, -63,39,32,60),
+                new Segment(1, -8,89,-3,18),
+                new Segment(1, 93,50,-48,42),
+                new Segment(1, -83,14,-46,32),
+                new Segment(1, -8,69,-30,-49),
+                new Segment(1, -50,-90,-76,-36),
+                new Segment(1, -37,62,10,0)
+            };
+
+            Execute(segments, 12);
+        }
+
+        [TestMethod]
+        public void Case6()
+        {
+            var segments = new[]
+            {
+                 new Segment(1, 74, -9, -14, 87),
+                 new Segment(2, 93,-90, -95, -39),
+                 new Segment(3, -16, 17, -85, -57),
+                 new Segment(4, -57, -12, 38, -4),
+                 new Segment(5, 3, 98, -83, 34),
+                 new Segment(6, 98, 14, -7, -66),
+                 new Segment(7, -98, 83, 91, 25),
+                 new Segment(8, -65, 9, -89, 86)
+            };
+
+            Execute(segments, 9);
+        }
+
+        [TestMethod]
+        public void Case7()
+        {
+            var segments = new[]
+            {
+                new Segment(1, 84,-59,39,-38),
+                new Segment(1, 35,19,-32,-11),
+                new Segment(1, -34,-82,-100,28),
+                new Segment(1, 29,0,42,-68),
+                new Segment(1, 75,-90,97,48),
+                new Segment(1, -21,-27,84,-9),
+                new Segment(1, -15,-24,-34,87),
+                new Segment(1, 15,-18,8,-42),
+                new Segment(1, -36,-53,-10,-38),
+                new Segment(1, 31,39,-11,-6),
+                new Segment(1, 71,-71,66,57),
+                new Segment(1, 70,83,-71,23)
+            };
+
+            Execute(segments, 8);
+        }
+
+        [TestMethod]
+        public void Case12()
+        {
+            var segments = new[]
+            {
+                new Segment(1,74,-9,-14,87),
+                new Segment(1,93,-90,-95,-39),
+                new Segment(1,-16,17,-85,-57),
+                new Segment(1,-57,-12,38,-4),
+                new Segment(1,3,98,-83,34),
+                new Segment(1,98,14,-7,-66),
+                new Segment(1,-98,83,91,25),
+                new Segment(1,-65,9,-89,86)
+            };
+
+            Execute(segments, 9);
+        }
+
         [TestMethod]
         public void Simple1()
         {
@@ -99,7 +177,7 @@ namespace Tests
         {
             var svg = segments.ToSvg();
 
-            var intersections = new SweepLine(segments).FindIntersections().ToArray();
+            var intersections = new SweepLine(segments, true).FindIntersections().ToArray();
             Console.WriteLine("Intersections count: {0}", intersections.Length);
 
             foreach (var intersection in intersections)

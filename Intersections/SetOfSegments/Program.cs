@@ -15,7 +15,7 @@ namespace SetOfSegments
             var segments = ReadSegments();
 #endif
 
-            var intersections = new SweepLine(segments)
+            var intersections = new SweepLine(segments, false)
                 .FindIntersections()
                 .ToArray();
 
@@ -97,9 +97,15 @@ namespace SetOfSegments
             return !(a == b);
         }
 
+        public static long Area2(Point a, Point b, Point c)
+        {
+            return (b.X - a.X) * (c.Y - a.Y) - (c.X - a.X) * (b.Y - a.Y);
+        }
+
         public override string ToString()
         {
-            return X + "," + Y;
+            // do not change, it's important test output
+            return X + " " + Y;
         }
 
         public override int GetHashCode()
@@ -124,21 +130,20 @@ namespace SetOfSegments
 
         public Segment(int id, Point A, Point B)
         {
-            var points = new[] { A, B }
+            this.Id = id;
+
+            this.Points = new[] { A, B }
                 .OrderBy(p => p.X)
                 .ThenBy(p => p.Y)
                 .ToArray();
-
-            this.Id = id;
-            this.A = points[0];
-            this.B = points[1];
 
             _tan = 1d * (this.B.Y - this.A.Y) / (this.B.X - this.A.X);
         }
 
         public int Id { get; }
-        public Point A { get; } // left bottom
-        public Point B { get; } // right top
+        public Point A => this.Points[0]; // left bottom
+        public Point B => this.Points[1]; // right top
+        public Point[] Points { get; }
 
         //public Point CalculatePointAtX(long x)
         //{
@@ -289,6 +294,11 @@ namespace SetOfSegments
             return this.Segment1.Id == other.Segment1.Id
                 && this.Segment2.Id == other.Segment2.Id;
         }
+
+        public override string ToString()
+        {
+            return this.EventName;
+        }
     }
 
     public class Intersection
@@ -306,6 +316,12 @@ namespace SetOfSegments
     internal class EventQueue
     {
         private List<Event> _events = new List<Event>();
+        private readonly bool _doLog;
+
+        public EventQueue(bool doLog)
+        {
+            _doLog = doLog;
+        }
 
         public void Clear()
         {
@@ -330,6 +346,11 @@ namespace SetOfSegments
         {
             var @event = _events[0];
             _events.RemoveAt(0);
+
+            if (_doLog)
+            {
+                Console.WriteLine(@event);
+            }
             return @event;
         }
 
@@ -373,6 +394,7 @@ namespace SetOfSegments
         }
     }
 
+    [DebuggerDisplay("{ToDebugDisplay()}")]
     internal class Status
     {
         private List<Segment> _status = new List<Segment>();
@@ -458,20 +480,27 @@ namespace SetOfSegments
         {
             return string.Join(" ", _status.Select(s => s.ToString()).ToArray());
         }
+
+        private string ToDebugDisplay()
+        {
+            return string.Join(" ", _status.Select(s => "S" +s.Id).ToArray());
+        }
     }
 
     public class SweepLine
     {
         private int _interesectionEventTag = 0;
         private readonly IEnumerable<Segment> _segments;
-
+        private readonly bool _log;
         private List<Intersection> _intersections = new List<Intersection>();
         private Status _status = new Status();
-        private EventQueue _eventQueue = new EventQueue();
+        private EventQueue _eventQueue;
 
-        public SweepLine(IEnumerable<Segment> segments)
+        public SweepLine(IEnumerable<Segment> segments, bool log)
         {
+            _eventQueue = new EventQueue(log);
             _segments = segments;
+            _log = log;
         }
 
         public IEnumerable<Intersection> FindIntersections()
@@ -484,7 +513,6 @@ namespace SetOfSegments
             while(_eventQueue.Count > 0)
             {
                 var @event = _eventQueue.Dequeue();
-
                 switch (@event.EventType)
                 {
                     case EventType.BeginSegment:
@@ -504,6 +532,8 @@ namespace SetOfSegments
 
         private void PrepereEventQueue()
         {
+            _eventQueue.Clear();
+
             var events = _segments
                 .SelectMany(s => new[] { Event.BeginSegment(s), Event.EndSegment(s) })
                 //.OrderBy(e => e.Time.X)
@@ -631,45 +661,47 @@ namespace SetOfSegments
         {
             var intersectionPoint = x.Intersection(y);
 
-            return intersectionPoint == Point.Empty
+            var result = intersectionPoint == Point.Empty
                 ? CompareNonIntersecting(x, y)
                 : CompareIntersecting(x, y, intersectionPoint);
 
-            //var p1 = x.B;
-            //var p2 = y.A;
-
-            //var a = x.CalculateHeightAtX(_time);
-            //var b = y.CalculateHeightAtX(_time);
-            //return -Math.Sign(a - b);
+            return result;
         }
 
         private int CompareIntersecting(Segment x, Segment y, Point intersectionPoint)
         {
-            if (_time == intersectionPoint.X)
+            if(_time <= intersectionPoint.X)
             {
-                return 0;
+                var area = Point.Area2(x.A, x.B, y.A);
+                return Math.Sign(area);
             }
-
-            return _time < intersectionPoint.X
-                ? -Math.Sign(x.A.Y - y.A.Y)
-                : -Math.Sign(x.B.Y - y.B.Y);
+            else
+            {
+                var area = Point.Area2(x.A, x.B, y.B);
+                return Math.Sign(area);
+            }
         }
 
         private int CompareNonIntersecting(Segment x, Segment y)
         {
-            if (this.IsWider(x, y) || this.IsWider(y, x))
+            if(this.IsWider(x, y))
             {
-                return -Math.Sign(x.A.Y - y.A.Y);
+                var area = Point.Area2(x.A, x.B, y.A);
+                return Math.Sign(area);
             }
 
-            if(x.A.X < y.A.X)
+            if(this.IsWider(y, x))
             {
-                return -Math.Sign(x.B.Y - y.A.Y);
+                var area = Point.Area2(y.A, y.B, x.A);
+                return -Math.Sign(area);
             }
-            else
-            {
-                return -Math.Sign(x.A.Y - y.B.Y);
-            }
+
+            var c = y.Points
+                .Where(p => p.X >= x.A.X && p.X <= x.B.X)
+                .First();
+
+            var areaC = Point.Area2(x.A, x.B, c);
+            return Math.Sign(areaC);
         }
 
         private bool IsWider(Segment u, Segment v)
