@@ -647,7 +647,7 @@ namespace SetOfSegments
         }
     }
 
-    internal class SegmentTimeComparer : IComparer<Segment>
+    public class SegmentTimeComparer : IComparer<Segment>
     {
         private readonly long _time;
 
@@ -658,7 +658,7 @@ namespace SetOfSegments
 
         public int Compare(Segment x, Segment y)
         {
-            var intersectionPoint = x.Intersection(y);
+            var intersectionPoint = Segment.CommonIntersectionPoint(x, y);
 
             var result = intersectionPoint == Point.Empty
                 ? CompareNonIntersecting(x, y)
@@ -686,13 +686,13 @@ namespace SetOfSegments
             if(this.IsWider(x, y))
             {
                 var area = Point.Area2(x.A, x.B, y.A);
-                return Math.Sign(area);
+                return -Math.Sign(area);
             }
 
             if(this.IsWider(y, x))
             {
                 var area = Point.Area2(y.A, y.B, x.A);
-                return -Math.Sign(area);
+                return Math.Sign(area);
             }
 
             var c = y.Points
@@ -700,7 +700,7 @@ namespace SetOfSegments
                 .First();
 
             var areaC = Point.Area2(x.A, x.B, c);
-            return Math.Sign(areaC);
+            return -Math.Sign(areaC);
         }
 
         private bool IsWider(Segment u, Segment v)

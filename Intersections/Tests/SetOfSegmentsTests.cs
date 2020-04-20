@@ -61,6 +61,23 @@ namespace Tests
         }
 
         [TestMethod]
+        public void Case4()
+        {
+            var segments = new[]
+            {
+                new Segment(1,91,82,-66,-92),
+                new Segment(2,58,-69,-34,-3),
+                new Segment(3,95,23,-91,-39),
+                new Segment(4,70,63,-17,28),
+                new Segment(5,83,-44,-25,2),
+                new Segment(6,-57,94,-37,4),
+                new Segment(7,93,-96,94,65),
+            };
+
+            Execute(segments, 6);
+        }
+
+        [TestMethod]
         public void Case5()
         {
             var segments = new[]
@@ -173,6 +190,8 @@ namespace Tests
             Execute(segments, 1);
         }
 
+        
+
         private void Execute(IReadOnlyCollection<Segment> segments, int expectedCount)
         {
             var svg = segments.ToSvg();
@@ -187,5 +206,7 @@ namespace Tests
 
             Assert.AreEqual(expectedCount, intersections.Length);
         }
+
+       
     }
 }
