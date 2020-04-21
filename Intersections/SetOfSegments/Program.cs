@@ -493,7 +493,6 @@ namespace SetOfSegments
     public class SweepLine
     {
         private readonly IEnumerable<Segment> _segments;
-        private readonly bool _log;
         private List<Intersection> _intersections = new List<Intersection>();
         private Status _status = new Status();
         private EventQueue _eventQueue;
@@ -502,7 +501,6 @@ namespace SetOfSegments
         {
             _eventQueue = new EventQueue(log);
             _segments = segments;
-            _log = log;
         }
 
         public IEnumerable<Intersection> FindIntersections()
