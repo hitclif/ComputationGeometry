@@ -78,7 +78,7 @@ namespace VerticalHorizontalSegments
 
 
     [DebuggerDisplay("{X},{Y}")]
-    internal struct Point : IEquatable<Point>
+    public struct Point : IEquatable<Point>
     {
         public Point(long x, long y)
         {
@@ -96,7 +96,7 @@ namespace VerticalHorizontalSegments
     }
 
     [DebuggerDisplay("{}")]
-    internal struct Segment
+    public struct Segment
     {
         public Segment(long[] coordinates) : this(coordinates[0], coordinates[1], coordinates[2], coordinates[3])
         {
@@ -135,7 +135,7 @@ namespace VerticalHorizontalSegments
         public bool IsVertical => this.A.X == this.B.X;
     }
 
-    internal static class Tools
+    public static class Tools
     {
         private enum Orientation
         {
