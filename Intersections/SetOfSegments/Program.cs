@@ -375,6 +375,17 @@ namespace SetOfSegments
             _events.RemoveAt(i);
         }
 
+        public string IntersectionEvents()
+        {
+            var inters = _events
+                .Where(e => e.EventType == EventType.Intersection)
+                .OrderBy(e => e.Time.X)
+                .Select(e => e.ToString())
+                .ToArray();
+
+            return string.Join(" ", inters);
+        }
+
         private int IndexOfEvent(Event @event, int fromIndex)
         {
             var temp = fromIndex;
@@ -432,12 +443,20 @@ namespace SetOfSegments
             return index;
         }
 
-        public void Swap(Segment segment1, Segment segment2, long time)
-        {
-            var indexOf1 = this.FindIndexOfSegmentAtTime(time, segment1);
+        //public void Swap(Segment segment1, Segment segment2, long time)
+        //{
+        //    var indexOf1 = this.FindIndexOfSegmentAtTime(time, segment1);
 
-            _status.RemoveAt(indexOf1);
-            _status.Insert(indexOf1 + 1, segment1);
+        //    _status.RemoveAt(indexOf1);
+        //    _status.Insert(indexOf1 + 1, segment1);
+        //}
+
+        public void SwapWithRight(int index)
+        {
+            // var indexOf1 = this.FindIndexOfSegmentAtTime(time, segment1);
+            var s1 = _status[index];
+            _status.RemoveAt(index);
+            _status.Insert(index + 1, s1);
         }
 
         private int FindIndexToInsert(Segment segment)
@@ -456,27 +475,30 @@ namespace SetOfSegments
         {
             var comparer = new SegmentTimeComparer(time);
             var index = _status.BinarySearch(segment, comparer);
+
             if (index < 0)
             {
                 index = ~index;
             }
 
-            if (_status[index] == segment)
-            {
-                return index;
-            }
+            return index;
 
-            if (index > 0 && _status[index - 1] == segment)
-            {
-                return index - 1;
-            }
+            //if (_status[index] == segment)
+            //{
+            //    return index;
+            //}
 
-            if (index < _status.Count - 1 && _status[index + 1] == segment)
-            {
-                return index + 1;
-            }
+            //if (index > 0 && _status[index - 1] == segment)
+            //{
+            //    return index - 1;
+            //}
 
-            throw new Exception("FindIndex failed");
+            //if (index < _status.Count - 1 && _status[index + 1] == segment)
+            //{
+            //    return index + 1;
+            //}
+
+            //throw new Exception("FindIndex failed");
         }
 
         public override string ToString()
@@ -484,7 +506,7 @@ namespace SetOfSegments
             return string.Join(" ", _status.Select(s => s.ToString()).ToArray());
         }
 
-        private string ToDebugDisplay()
+        public string ToDebugDisplay()
         {
             return string.Join(" ", _status.Select(s => "S" +s.Id).ToArray());
         }
@@ -493,6 +515,7 @@ namespace SetOfSegments
     public class SweepLine
     {
         private readonly IEnumerable<Segment> _segments;
+        private readonly bool _log;
         private List<Intersection> _intersections = new List<Intersection>();
         private Status _status = new Status();
         private EventQueue _eventQueue;
@@ -501,6 +524,7 @@ namespace SetOfSegments
         {
             _eventQueue = new EventQueue(log);
             _segments = segments;
+            _log = log;
         }
 
         public IEnumerable<Intersection> FindIntersections()
@@ -524,6 +548,13 @@ namespace SetOfSegments
                     case EventType.Intersection:
                         this.HandleIntersection(@event);
                         break;
+                }
+
+                if (_log)
+                {
+                    Console.WriteLine(_status.ToDebugDisplay());
+                    Console.WriteLine(_eventQueue.IntersectionEvents());
+                    Console.WriteLine();
                 }
             }
 
@@ -581,6 +612,7 @@ namespace SetOfSegments
             var intersection = new Intersection(@event.Segment1, @event.Segment2);
             _intersections.Add(intersection);
 
+            //segment 1 is higher than segment 2! => lower index
             var index = _status.FindIndex(@event.Segment1, @event.Time.X); // this.FindIndexOfSegmentAtTime(@event.Time, @event.Segment1);
 
             if(index > 0)
@@ -602,7 +634,8 @@ namespace SetOfSegments
                 this.EnqueuePotentialIntersectionEvent(_status.GetAtIndex(index), _status.GetAtIndex(index + 2));
             }
 
-            _status.Swap(@event.Segment1, @event.Segment2, @event.Time.X);
+            _status.SwapWithRight(index);
+            // _status.Swap(@event.Segment1, @event.Segment2, @event.Time.X - 1);
         }
 
         private void RemovePotentialFutureEvent(Segment above, Segment below)
@@ -667,7 +700,12 @@ namespace SetOfSegments
 
         private int CompareIntersecting(Segment x, Segment y, Point intersectionPoint)
         {
-            if(_time <= intersectionPoint.X)
+            if (_time == intersectionPoint.X)
+            {
+                return 0;
+            }
+
+            if(_time < intersectionPoint.X)
             {
                 var area = Point.Area2(x.A, x.B, y.A);
                 return Math.Sign(area);
@@ -712,11 +750,6 @@ namespace SetOfSegments
 
             //var areaC = Point.Area2(x.A, x.B, c);
             //return -Math.Sign(areaC);
-        }
-
-        private bool IsWider(Segment u, Segment v)
-        {
-            return u.A.X <= v.A.X && u.B.X >= v.B.X;
         }
     }
 }

@@ -175,6 +175,29 @@ namespace Tests
             Assert.AreEqual(1, compare4);
         }
 
+        /*
+        u: \
+            \----- v
+             \
+        */
+        [TestMethod]
+        public void ComparerTest7()
+        {
+            var u = new Segment(1, 10, 0, 0, 10);
+            var v = new Segment(2, 10, 3, 15, 3);
+
+            var compare1 = this.Compare(u, v, 6);
+            var compare2 = this.Compare(u, v, 8);
+            var compare3 = this.Compare(v, u, 6);
+            var compare4 = this.Compare(v, u, 8);
+
+            Assert.AreEqual(1, compare1);
+            Assert.AreEqual(1, compare2);
+
+            Assert.AreEqual(-1, compare3);
+            Assert.AreEqual(-1, compare4);
+        }
+
         private int Compare(Segment u, Segment v, long time)
         {
             var result = new SegmentTimeComparer(time).Compare(u, v);
