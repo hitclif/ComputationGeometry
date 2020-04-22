@@ -28,11 +28,11 @@ namespace Tests
             var compare3 = this.Compare(v, u, 6);
             var compare4 = this.Compare(v, u, 8);
 
-            Assert.AreEqual(-1, compare1);
-            Assert.AreEqual(-1, compare2);
+            Assert.AreEqual(1, compare1);
+            Assert.AreEqual(1, compare2);
 
-            Assert.AreEqual(1, compare3);
-            Assert.AreEqual(1, compare4);
+            Assert.AreEqual(-1, compare3);
+            Assert.AreEqual(-1, compare4);
         }
 
         /*
@@ -59,11 +59,11 @@ namespace Tests
             var compare3 = this.Compare(v, u, 1);
             var compare4 = this.Compare(v, u, 3);
 
-            Assert.AreEqual(1, compare1);
-            Assert.AreEqual(1, compare2);
+            Assert.AreEqual(-1, compare1);
+            Assert.AreEqual(-1, compare2);
 
-            Assert.AreEqual(-1, compare3);
-            Assert.AreEqual(-1, compare4);
+            Assert.AreEqual(1, compare3);
+            Assert.AreEqual(1, compare4);
         }
 
         /*
@@ -82,11 +82,11 @@ namespace Tests
             var compare3 = this.Compare(v, u, 3);
             var compare4 = this.Compare(v, u, 5);
 
-            Assert.AreEqual(1, compare1);
-            Assert.AreEqual(1, compare2);
+            Assert.AreEqual(-1, compare1);
+            Assert.AreEqual(-1, compare2);
 
-            Assert.AreEqual(-1, compare3);
-            Assert.AreEqual(-1, compare4);
+            Assert.AreEqual(1, compare3);
+            Assert.AreEqual(1, compare4);
         }
 
         /*
@@ -105,11 +105,11 @@ namespace Tests
             var compare3 = this.Compare(v, u, 1);
             var compare4 = this.Compare(v, u, 3);
 
-            Assert.AreEqual(1, compare1);
-            Assert.AreEqual(1, compare2);
+            Assert.AreEqual(-1, compare1);
+            Assert.AreEqual(-1, compare2);
 
-            Assert.AreEqual(-1, compare3);
-            Assert.AreEqual(-1, compare4);
+            Assert.AreEqual(1, compare3);
+            Assert.AreEqual(1, compare4);
         }
 
         /*
@@ -137,11 +137,11 @@ namespace Tests
             var compare3 = this.Compare(v, u, 6);
             var compare4 = this.Compare(v, u, 10);
 
-            Assert.AreEqual(1, compare1);
-            Assert.AreEqual(1, compare2);
+            Assert.AreEqual(-1, compare1);
+            Assert.AreEqual(-1, compare2);
 
-            Assert.AreEqual(-1, compare3);
-            Assert.AreEqual(-1, compare4);
+            Assert.AreEqual(1, compare3);
+            Assert.AreEqual(1, compare4);
         }
 
         /*
@@ -168,11 +168,11 @@ namespace Tests
             var compare3 = this.Compare(v, u, 6);
             var compare4 = this.Compare(v, u, 10);
 
-            Assert.AreEqual(1, compare1);
-            Assert.AreEqual(1, compare2);
+            Assert.AreEqual(-1, compare1);
+            Assert.AreEqual(-1, compare2);
 
-            Assert.AreEqual(-1, compare3);
-            Assert.AreEqual(-1, compare4);
+            Assert.AreEqual(1, compare3);
+            Assert.AreEqual(1, compare4);
         }
 
         private int Compare(Segment u, Segment v, long time)

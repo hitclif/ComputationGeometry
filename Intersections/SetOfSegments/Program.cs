@@ -681,24 +681,37 @@ namespace SetOfSegments
 
         private int CompareNonIntersecting(Segment x, Segment y)
         {
-            if(this.IsWider(x, y))
+            var p1 = Math.Sign(Point.Area2(x.A, x.B, y.A));
+            var p2 = Math.Sign(Point.Area2(x.A, x.B, y.B));
+
+            if(p1 == p2)
             {
-                var area = Point.Area2(x.A, x.B, y.A);
-                return -Math.Sign(area);
+                return p2;
             }
 
-            if(this.IsWider(y, x))
-            {
-                var area = Point.Area2(y.A, y.B, x.A);
-                return Math.Sign(area);
-            }
+            p1 = Math.Sign(Point.Area2(y.A, y.B, x.A));
+            // p2 = Math.Sign(Point.Area2(x.A, x.B, y.B));
+            return -p1;
 
-            var c = y.Points
-                .Where(p => p.X >= x.A.X && p.X <= x.B.X)
-                .First();
 
-            var areaC = Point.Area2(x.A, x.B, c);
-            return -Math.Sign(areaC);
+            //if(this.IsWider(x, y))
+            //{
+            //    var area = Point.Area2(x.A, x.B, y.A);
+            //    return -Math.Sign(area);
+            //}
+
+            //if(this.IsWider(y, x))
+            //{
+            //    var area = Point.Area2(y.A, y.B, x.A);
+            //    return Math.Sign(area);
+            //}
+
+            //var c = y.Points
+            //    .Where(p => p.X >= x.A.X && p.X <= x.B.X)
+            //    .First();
+
+            //var areaC = Point.Area2(x.A, x.B, c);
+            //return -Math.Sign(areaC);
         }
 
         private bool IsWider(Segment u, Segment v)

@@ -190,8 +190,6 @@ namespace Tests
             Execute(segments, 1);
         }
 
-        
-
         private void Execute(IReadOnlyCollection<Segment> segments, int expectedCount)
         {
             var svg = segments.ToSvg();
