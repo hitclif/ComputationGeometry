@@ -339,6 +339,8 @@ namespace SetOfSegments
     internal class EventQueue
     {
         private List<Event> _events = new List<Event>();
+        private List<Event> _intersections = new List<Event>();
+        
         private readonly bool _doLog;
 
         public EventQueue(bool doLog)
@@ -355,20 +357,28 @@ namespace SetOfSegments
 
         public void Enqueue(Event @event)
         {
-            var index = _events.BinarySearch(@event);
+            var queue = @event.EventType == EventType.Intersection
+                ? _intersections
+                : _events;
+
+            var index = queue.BinarySearch(@event);
 
             if (index < 0)
             {
                 index = ~index;
             }
 
-            _events.Insert(index, @event);
+            queue.Insert(index, @event);
         }
 
         public Event Dequeue()
         {
-            var @event = _events[0];
-            _events.RemoveAt(0);
+            var queue = _intersections.Count == 0 || _intersections[0].Time2 > _events[0].Time2
+                ? _events
+                : _intersections;
+
+            var @event = queue[0];
+            queue.RemoveAt(0);
 
             if (_doLog)
             {
@@ -379,27 +389,27 @@ namespace SetOfSegments
 
         public void RemoveFuture(Event @event)
         {
-            var index = _events.BinarySearch(@event);
+            var index = _intersections.BinarySearch(@event);
 
             if (index < 0)
             {
                 return;
             }
 
-            var i = this.IndexOfEvent(@event, index);
-            if (i == -1)
-            {
-                return;
-            }
+            //var i = this.IndexOfEvent(@event, index);
+            //if (i == -1)
+            //{
+            //    return;
+            //}
 
-            _events.RemoveAt(i);
+            _intersections.RemoveAt(index);
         }
 
         public string IntersectionEvents()
         {
-            var inters = _events
-                .Where(e => e.EventType == EventType.Intersection)
-                .OrderBy(e => e.Time2)
+            var inters = _intersections
+                // .Where(e => e.EventType == EventType.Intersection)
+                // .OrderBy(e => e.Time2)
                 .Select(e => e.ToString())
                 .ToArray();
 
