@@ -71,6 +71,38 @@ namespace Tests
             Execute(segments, 2);
         }
 
+        [TestMethod]
+        public void C2()
+        {
+            var segments = new[] {
+                new Segment(0,0,10,0),
+                new Segment(5,0,5,0)
+            };
+
+            Execute(segments, 1);
+        }
+
+        [TestMethod]
+        public void Case6()
+        {
+            var segments = new[] {
+                new Segment(18,1,21,1),
+                new Segment(-22,-6,15,-6),
+                new Segment(-7,16,8,16),
+                new Segment(11,17,24,17),
+                new Segment(-4,13,9,13),
+                new Segment(-22,2,-12,2),
+                new Segment(4,-9,-20,-9),
+                new Segment(-23,11,-7,11),
+                new Segment(7,4,7,4),
+                new Segment(-22,21,21,21),
+                new Segment(18,-16,-1,-16),
+                new Segment(-10,-19,-10,12)
+            };
+
+            Execute(segments, 3);
+        }
+
         private void Execute(IReadOnlyCollection<Segment> segments, int expectedCount)
         {
             var svg = segments.ToSvg();

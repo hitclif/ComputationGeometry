@@ -108,18 +108,18 @@ namespace VerticalHorizontalSegments
 
         public Segment(Point a, Point b)
         {
-            if (a.X == b.X && a.Y == b.Y)
-            {
-                throw new Exception("single point");
-            }
-
             if (a.X != b.X && a.Y != b.Y)
             {
                 throw new Exception("not horizontal neither vertical");
             }
 
-            this.A = a;
-            this.B = b;
+            var points = new[] { a, b }
+                .OrderBy(p => p.X)
+                .ThenBy(p => p.Y)
+                .ToArray();
+
+            this.A = points[0];
+            this.B = points[1];
         }
 
         public Point A { get; }
@@ -133,6 +133,8 @@ namespace VerticalHorizontalSegments
 
         public bool IsHorizontal => this.A.Y == this.B.Y;
         public bool IsVertical => this.A.X == this.B.X;
+
+        public bool ZeroLengthSegment => this.IsHorizontal && this.IsVertical;
     }
 
     public static class Tools
@@ -146,11 +148,11 @@ namespace VerticalHorizontalSegments
         public static int CountIntersections(this IEnumerable<Segment> segments)
         {
             var groupA = segments
-                .Where(s => s.IsHorizontal)
+                .Where(s => s.IsHorizontal && !s.IsVertical)
                 .GroupBy(h => h.A.X, h => h);
 
             var groupB = segments
-                .Where(s => s.IsHorizontal)
+                .Where(s => s.IsHorizontal && !s.IsVertical)
                 .GroupBy(h => h.B.X, h => h);
 
             var horizontals = groupA
@@ -158,16 +160,15 @@ namespace VerticalHorizontalSegments
                 .OrderBy(g => g.Key)
                 .ToList();
 
+            var singlePoints = segments
+                .Where(s => s.ZeroLengthSegment)
+                .ToArray();
+
             var verticals = segments
                 .Where(s => s.IsVertical)
                 .GroupBy(v => v.Top.X, v => v)
                 .OrderBy(g => g.Key)
                 .ToList();
-
-            if (horizontals.Count == 0 || verticals.Count == 0)
-            {
-                return 0;
-            }
 
             var allXCoordinates = horizontals
                 .Select(h => h.Key)
