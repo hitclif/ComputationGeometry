@@ -169,7 +169,7 @@ namespace SetOfSegments
             return new Point((long)x, (long)y);
         }
 
-        public double IntersectionTime(Segment other)
+        public double IntersectionParameter(Segment other)
         {
             var p1 = this.A;
             var p2 = this.B;
@@ -180,30 +180,29 @@ namespace SetOfSegments
                 ((p1.X - p3.X) * (p3.Y - p4.Y) - (p1.Y - p3.Y) * (p3.X - p4.X))
                 /
                 ((p1.X - p2.X) * (p3.Y - p4.Y) - (p1.Y - p2.Y) * (p3.X - p4.X));
+
+            return t;
+        }
+
+        public double IntersectionTime(Segment other)
+        {
+            var t = this.IntersectionParameter(other);
 
             var tx = this.A.X + (this.B.X - this.A.X) * t;
             return Math.Round(tx, 7);
         }
 
-        public Point Intersection(Segment other)
+        public Intersection Intersection(Segment other)
         {
-            var p1 = this.A;
-            var p2 = this.B;
-            var p3 = other.A;
-            var p4 = other.B;
+            var tp1 = this.IntersectionParameter(other);
+            var tp2 = other.IntersectionParameter(this);
 
-            var t = 1d *
-                ((p1.X - p3.X) * (p3.Y - p4.Y) - (p1.Y - p3.Y) * (p3.X - p4.X))
-                /
-                ((p1.X - p2.X) * (p3.Y - p4.Y) - (p1.Y - p2.Y) * (p3.X - p4.X));
-
-            if (t < 0 || t > 1)
+            if(tp1 < 0 || tp1 > 1 || tp2 < 0 || tp2 > 1)
             {
-                return Point.Empty;
+                return null;
             }
 
-            var intersectionPoint = this.CalculatePointOnLine(t);
-            return intersectionPoint;
+            return new Intersection(this, other);
         }
 
         public bool IsPointOnSegment(Point point)
@@ -219,16 +218,6 @@ namespace SetOfSegments
         public long Area2(Point point)
         {
             return (this.B.X - this.A.X) * (point.Y - this.A.Y) - (point.X - this.A.X) * (this.B.Y - this.A.Y);
-        }
-
-        public static Point CommonIntersectionPoint(Segment u, Segment v)
-        {
-            var pi1 = u.Intersection(v);
-            var pi2 = v.Intersection(u);
-
-            return pi1 == pi2 && pi1 != Point.Empty
-                ? pi1
-                : Point.Empty;
         }
 
         public override string ToString()
@@ -283,17 +272,6 @@ namespace SetOfSegments
         public int CompareTo(Event other)
         {
             return Math.Sign(this.Time2 - other.Time2);
-            //if (this.Time.X != other.Time.X)
-            //{
-            //    return Math.Sign(this.Time.X - other.Time.X);
-            //}
-
-            //if (this.EventType != other.EventType)
-            //{
-            //    return this.EventType - other.EventType;
-            //}
-
-            //return -Math.Sign(this.Time.Y - other.Time.Y);
         }
 
         public static Event BeginSegment(Segment segment)
@@ -306,9 +284,9 @@ namespace SetOfSegments
             return new Event(EventType.EndSegment, segment.B, segment, Segment.Empty, segment.B.X);
         }
 
-        public static Event Intersection(Point intersectionPoint, Segment above, Segment below, double time2)
+        public static Event Intersection(Intersection intersection, Segment above, Segment below)
         {
-            return new Event(EventType.Intersection, intersectionPoint, above, below, time2);
+            return new Event(EventType.Intersection, intersection.Point, above, below, intersection.Time);
         }
 
         public bool Equals(Event other)
@@ -329,10 +307,17 @@ namespace SetOfSegments
         {
             this.U = u;
             this.V = v;
+
+            this.Time = u.IntersectionTime(v);
+            this.Point = u.CalculatePointOnLine(u.IntersectionParameter(v));
         }
 
         public Segment U { get; }
         public Segment V { get; }
+
+        public double Time { get; }
+
+        public Point Point { get; }
     }
 
     [DebuggerDisplay("{IntersectionEvents()}")]
@@ -396,45 +381,16 @@ namespace SetOfSegments
                 return;
             }
 
-            //var i = this.IndexOfEvent(@event, index);
-            //if (i == -1)
-            //{
-            //    return;
-            //}
-
             _intersections.RemoveAt(index);
         }
 
         public string IntersectionEvents()
         {
             var inters = _intersections
-                // .Where(e => e.EventType == EventType.Intersection)
-                // .OrderBy(e => e.Time2)
                 .Select(e => e.ToString())
                 .ToArray();
 
             return string.Join(" ", inters);
-        }
-
-        private int IndexOfEvent(Event @event, int fromIndex)
-        {
-            var temp = fromIndex;
-            while (temp < _events.Count)
-            {
-                if (_events[temp].Time.X > @event.Time.X)
-                {
-                    return -1;
-                }
-
-                if (_events[temp].Equals(@event))
-                {
-                    return temp;
-                }
-
-                temp++;
-            }
-
-            return -1;
         }
     }
 
@@ -647,14 +603,13 @@ namespace SetOfSegments
 
         private Event CreateIntersectionEvent(Segment above, Segment below)
         {
-            var intersectionPoint = Segment.CommonIntersectionPoint(above, below);
-            if (intersectionPoint == Point.Empty)
+            var intersection = above.Intersection(below);
+            if (intersection == null)
             {
                 return null;
             }
 
-            var tx = above.IntersectionTime(below);
-            return Event.Intersection(intersectionPoint, above, below, tx);
+            return Event.Intersection(intersection, above, below);
         }
     }
 
@@ -669,19 +624,18 @@ namespace SetOfSegments
 
         public int Compare(Segment x, Segment y)
         {
-            var intersectionPoint = Segment.CommonIntersectionPoint(x, y);
+            var intersection = x.Intersection(y);
 
-            var result = intersectionPoint == Point.Empty
+            var result = intersection == null
                 ? CompareNonIntersecting(x, y)
-                : CompareIntersecting(x, y, intersectionPoint);
+                : CompareIntersecting(x, y, intersection);
 
             return result;
         }
 
-        private int CompareIntersecting(Segment x, Segment y, Point intersectionPoint)
+        private int CompareIntersecting(Segment x, Segment y, Intersection intersection)
         {
-            var tx = x.IntersectionTime(y);
-            if(_event.Time2 <= tx)
+            if(_event.Time2 <= intersection.Time)
             {
                 var area = Point.Area2(x.A, x.B, y.A);
                 return Math.Sign(area);
