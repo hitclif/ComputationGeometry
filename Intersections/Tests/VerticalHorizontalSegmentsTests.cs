@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VerticalHorizontalSegments;
 
@@ -72,17 +74,6 @@ namespace Tests
         }
 
         [TestMethod]
-        public void C2()
-        {
-            var segments = new[] {
-                new Segment(0,0,10,0),
-                new Segment(5,0,5,0)
-            };
-
-            Execute(segments, 1);
-        }
-
-        [TestMethod]
         public void Case6()
         {
             var segments = new[] {
@@ -103,12 +94,29 @@ namespace Tests
             Execute(segments, 3);
         }
 
+        [TestMethod]
+        public void ManySegments()
+        {
+            var hSegments = Enumerable.Range(2, 25000)
+                .Select(i => new Segment(0, i, 50000, i));
+
+            var vSegments = Enumerable.Range(1, 25000)
+                .Select(i => new Segment(i, 0, i, 26000));
+
+            Execute(hSegments.Union(vSegments).ToArray(), 25000 * 25000);
+        }
+
         private void Execute(IReadOnlyCollection<Segment> segments, int expectedCount)
         {
-            var svg = segments.ToSvg();
+            var sw = new Stopwatch();
+            // var svg = segments.ToSvg();
 
-            var intersections = segments.CountIntersections();
-            Console.WriteLine("Intersections count: {0}", intersections);
+            sw.Start();
+            var intersections = new IntersectionCounter().CountIntersections(segments);
+            sw.Stop();
+
+            Console.WriteLine("Intersections count: {0}", intersections); 
+            Console.WriteLine("Elapsed time: {0}ms", sw.ElapsedMilliseconds);
 
             Assert.AreEqual(expectedCount, intersections);
         }
