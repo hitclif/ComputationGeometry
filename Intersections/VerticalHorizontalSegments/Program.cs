@@ -15,7 +15,7 @@ namespace VerticalHorizontalSegments
             var segments = ReadSegments();
 #endif
 
-            var intersections = segments.CountIntersections();
+            var intersections = new IntersectionCounter().CountIntersections(segments);
             Console.WriteLine(intersections);
 
 #if local
@@ -27,9 +27,6 @@ namespace VerticalHorizontalSegments
         {
             return new[]
             {
-                //new Segment(2,1,3,1),
-                //new Segment(2,1,3,1),
-                //new Segment(2,1,2,2),
                 new Segment(-10,3,-5,3),
                 new Segment(-5,0,-5,8),
                 new Segment(-7,4,-7,7),
@@ -76,7 +73,6 @@ namespace VerticalHorizontalSegments
         }
     }
 
-
     [DebuggerDisplay("{X},{Y}")]
     public struct Point : IEquatable<Point>
     {
@@ -95,7 +91,7 @@ namespace VerticalHorizontalSegments
         }
     }
 
-    [DebuggerDisplay("{}")]
+    [DebuggerDisplay("{A}_{B}")]
     public struct Segment
     {
         public Segment(long[] coordinates) : this(coordinates[0], coordinates[1], coordinates[2], coordinates[3])
@@ -125,16 +121,114 @@ namespace VerticalHorizontalSegments
         public Point A { get; }
         public Point B { get; }
 
-        public Point Left => this.A.X <= this.B.X ? this.A : this.B;
-        public Point Right => this.A.X > this.B.X ? this.A : this.B;
-
-        public Point Bottom => this.A.Y <= this.B.Y ? this.A : this.B;
-        public Point Top => this.A.Y > this.B.Y ? this.A : this.B;
-
         public bool IsHorizontal => this.A.Y == this.B.Y;
         public bool IsVertical => this.A.X == this.B.X;
 
         public bool ZeroLengthSegment => this.IsHorizontal && this.IsVertical;
+    }
+
+    public enum EventType
+    {
+        Start,
+        End
+    }
+
+    public class Event
+    {
+        public Event(Segment segment, EventType eventType)
+        {
+            this.Segment = segment;
+            this.EventType = eventType;
+            this.Time = eventType == EventType.Start
+                ? segment.A
+                : segment.B;
+        }
+
+        public Point Time { get; }
+        public Segment Segment { get; }
+        public EventType EventType { get; }
+    }
+
+
+    public class VerticalSegmentGroup : IComparable<VerticalSegmentGroup>
+    {
+        public VerticalSegmentGroup(long x) : this(x, new Segment[0])
+        {
+        }
+
+        public VerticalSegmentGroup(long x, IEnumerable<Segment> verticalSegments)
+        {
+            this.X = x;
+            this.VerticalSegments = verticalSegments.ToArray();
+        }
+
+        public long X { get; }
+        public Segment[] VerticalSegments { get; }
+
+        public int CompareTo(VerticalSegmentGroup other)
+        {
+            return Math.Sign(this.X - other.X);
+        }
+    }
+
+    public class IntersectionCounter
+    {
+        private SortedSet<VerticalSegmentGroup> _verticals;
+        // private SortedSet<Segment> _status = new SortedSet<Segment>(new YComparer());
+        // private Queue<Event> _eventQueue = new Queue<Event>();
+        private Queue<Segment> _segmentQueue;
+
+        public int CountIntersections(IEnumerable<Segment> segments)
+        {
+            this.PrepareData(segments.ToArray());
+
+            var count = 0;
+            while(_segmentQueue.Count > 0)
+            {
+                var segment = _segmentQueue.Dequeue();
+                var verticals = _verticals.GetViewBetween(new VerticalSegmentGroup(segment.A.X), new VerticalSegmentGroup(segment.B.X));
+                foreach(var vg in verticals)
+                {
+                    foreach(var v in vg.VerticalSegments)
+                    {
+                        var i = segment.Insersects(v);
+                        count += i ? 1 : 0;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        private void PrepareData(IReadOnlyCollection<Segment> segments)
+        {
+            var groups = segments
+                .Where(s => s.IsVertical && !s.IsHorizontal)
+                .GroupBy(s => s.A.X, s => s)
+                .Select(g => new VerticalSegmentGroup(g.Key, g))
+                .ToArray();
+
+            _verticals = new SortedSet<VerticalSegmentGroup>(groups);
+
+            //var events = segments
+            //    .Where(s => s.IsHorizontal && !s.IsVertical)
+            //    .SelectMany(s => new[] { new Event(s, EventType.Start), new Event(s, EventType.End) })
+            //    .OrderBy(e => e.Time.X)
+            //    .ThenBy(e => e.EventType);
+
+            //_eventQueue = new Queue<Event>(events);
+
+            _segmentQueue = new Queue<Segment>(segments.Where(s => s.IsHorizontal));
+        }
+    }
+
+
+    public class YComparer : IComparer<Segment>
+    {
+        public int Compare(Segment x, Segment y)
+        {
+            return Math.Sign(x.A.Y - y.B.Y);
+        }
     }
 
     public static class Tools
@@ -145,90 +239,7 @@ namespace VerticalHorizontalSegments
             vertical
         }
 
-        public static int CountIntersections(this IEnumerable<Segment> segments)
-        {
-            var groupA = segments
-                .Where(s => s.IsHorizontal && !s.IsVertical)
-                .GroupBy(h => h.A.X, h => h);
-
-            var groupB = segments
-                .Where(s => s.IsHorizontal && !s.IsVertical)
-                .GroupBy(h => h.B.X, h => h);
-
-            var horizontals = groupA
-                .Union(groupB)
-                .OrderBy(g => g.Key)
-                .ToList();
-
-            var singlePoints = segments
-                .Where(s => s.ZeroLengthSegment)
-                .ToArray();
-
-            var verticals = segments
-                .Where(s => s.IsVertical)
-                .GroupBy(v => v.Top.X, v => v)
-                .OrderBy(g => g.Key)
-                .ToList();
-
-            var allXCoordinates = horizontals
-                .Select(h => h.Key)
-                .Union(verticals.Select(v => v.Key))
-                .OrderBy(k => k)
-                .ToArray();
-
-            var count = 0;
-            var horizontalsBag = new List<Segment>();
-            foreach (var x in allXCoordinates)
-            {
-                if (verticals.Count == 0)
-                {
-                    break;
-                }
-
-                IGrouping<long, Segment> h = null;
-                if (horizontals.Count > 0 && horizontals[0].Key == x)
-                {
-                    h = horizontals[0];
-                    horizontals.RemoveAt(0);
-                }
-
-                IGrouping<long, Segment> v = null;
-                if (verticals[0].Key == x)
-                {
-                    v = verticals[0];
-                    verticals.RemoveAt(0);
-                }
-
-                var toRemove = h == null
-                    ? new Segment[0]
-                    : horizontalsBag.Intersect(h).ToArray();
-
-                horizontalsBag = h == null
-                    ? horizontalsBag
-                    : horizontalsBag.Union(h).Except(toRemove).ToList();
-
-                if (v != null)
-                {
-                    foreach (var ver in v)
-                    {
-                        foreach (var hor in toRemove)
-                        {
-                            count += hor.Insersects(ver) ? 1 : 0;
-                        }
-
-                        foreach(var hor in horizontalsBag)
-                        {
-                            count += hor.Insersects(ver) ? 1 : 0;
-                        }
-                    }
-
-                }
-            }
-
-            return count;
-        }
-
-        private static bool Insersects(this Segment horizontal, Segment vertical)
+        public static bool Insersects(this Segment horizontal, Segment vertical)
         {
             var aHSign = AreaSign(horizontal, vertical.A);
             var bHSign = AreaSign(horizontal, vertical.B);
@@ -256,173 +267,4 @@ namespace VerticalHorizontalSegments
                 : v >= b && v <= a;
         }
     }
-
-    //internal static class Tools
-    //{
-    //    public static int CountIntersections(this IEnumerable<Segment> segments)
-    //    {
-    //        var count = 0;
-    //        var all = segments.ToList();
-    //        while (all.Count > 0)
-    //        {
-    //            var segment = all[0];
-    //            all.RemoveAt(0);
-
-    //            var intersections = all.Count(s => segment.Insersects(s));
-    //            count += intersections;
-    //        }
-
-    //        return count;
-    //    }
-
-    //    public static int CountInterserctionsBinary(this IEnumerable<Segment> segments)
-    //    {
-    //        var segmentGroupComparer = new SegmentGroupComparer();
-    //        var groups = segments
-    //            .Where(s => s.IsVertical)
-    //            .GroupBy(s => s.Left.X, s => s, (c, s) =>
-    //            {
-    //                return new SegmentGroup(s.ToArray(), c);
-    //            })
-    //            .ToList();
-
-    //        groups.Sort(segmentGroupComparer);
-
-    //        var horizontalSegments = segments
-    //            .Where(s => s.IsHorizontal)
-    //            .ToArray();
-
-    //        var count = 0;
-    //        foreach (var h in horizontalSegments)
-    //        {
-    //            var temp = groups
-    //                .Where(g => g.Coordinate >= h.Left.X && g.Coordinate <= h.Right.X)
-    //                .SelectMany(g => g.Segments)
-    //                .Where(v => v.Top.Y >= h.Top.Y && v.Bottom.Y <= h.Top.Y)
-    //                .ToArray();
-
-    //            count += temp.Length;
-    //        }
-
-    //        return count;
-    //    }
-
-    //    private static bool IsBetween(this long v, long a, long b)
-    //    {
-    //        return a < b
-    //            ? v >= a && v <= b
-    //            : v >= b && v <= a;
-    //    }
-
-    //    private static bool Insersects(this Segment segment, Segment other)
-    //    {
-    //        if (segment.IsHorizontal == other.IsHorizontal)
-    //        {
-    //            return ParallelIntersection(segment, other);
-    //        }
-
-    //        return PerpendicularIntersection(segment, other);
-    //    }
-
-    //    private static bool PerpendicularIntersection(Segment u, Segment v)
-    //    {
-    //        var horizontal = u.IsHorizontal ? u : v;
-    //        var vertical = u.IsHorizontal ? v : u;
-
-    //        return horizontal.A.Y.IsBetween(vertical.A.Y, vertical.B.Y)
-    //            && vertical.A.X.IsBetween(horizontal.A.X, horizontal.B.X);
-    //    }
-
-    //    private static bool ParallelIntersection(Segment u, Segment v)
-    //    {
-    //        return u.IsHorizontal
-    //            ? HorizontalsIntersection(u, v)
-    //            : VerticalsIntersection(u, v);
-    //    }
-
-    //    private static bool HorizontalsIntersection(Segment segment, Segment other)
-    //    {
-    //        if (segment.A.Y == other.A.Y)
-    //        {
-    //            if (segment.A.X.IsBetween(other.A.X, other.B.X)
-    //                || segment.B.X.IsBetween(other.A.X, other.B.X)
-    //                || other.A.X.IsBetween(segment.A.X, segment.B.X)
-    //                || other.B.X.IsBetween(segment.A.X, segment.B.X))
-    //            {
-    //                throw new Exception("Intersection between horizontal segments");
-    //            }
-
-    //            return false;
-    //        }
-    //        else
-    //        {
-    //            return false;
-    //        }
-    //    }
-
-    //    private static bool VerticalsIntersection(Segment segment, Segment other)
-    //    {
-    //        if (segment.A.X == other.A.X)
-    //        {
-    //            if (segment.A.Y.IsBetween(other.A.Y, other.B.Y)
-    //                || segment.B.Y.IsBetween(other.A.Y, other.B.Y)
-    //                || other.A.Y.IsBetween(segment.A.Y, segment.B.Y)
-    //                || other.B.Y.IsBetween(segment.A.Y, segment.B.Y))
-    //            {
-    //                throw new Exception("Intersection between horizontal segments");
-    //            }
-
-    //            return false;
-    //        }
-    //        else
-    //        {
-    //            return false;
-    //        }
-    //    }
-
-    //    //private static IEnumerable<Segment> Find(this IReadOnlyCollection<ValuedSegment> sortedSegments, long minValue, long maxValue)
-    //    //{
-    //    //    return new Segment[0];
-    //    //}
-
-    //    //private static int FindFirstIndex(this IReadOnlyCollection<ValuedSegment> sortedSegments, long minValue, long maxValue)
-    //    //{
-    //    //}
-    //}
-
-    //internal class HorizontalComparer : IComparer<Segment>
-    //{
-    //    public int Compare(Segment u, Segment v)
-    //    {
-    //        return Math.Sign(u.Left.X - v.Left.X);
-    //    }
-    //}
-
-    //internal class VerticalComparer : IComparer<Segment>
-    //{
-    //    public int Compare(Segment u, Segment v)
-    //    {
-    //        return Math.Sign(u.Bottom.Y - v.Bottom.Y);
-    //    }
-    //}
-
-    //internal class SegmentGroupComparer : IComparer<SegmentGroup>
-    //{
-    //    public int Compare(SegmentGroup x, SegmentGroup y)
-    //    {
-    //        return Math.Sign(x.Coordinate - y.Coordinate);
-    //    }
-    //}
-
-    //internal class SegmentGroup
-    //{
-    //    public SegmentGroup(Segment[] segments, long coordinate)
-    //    {
-    //        this.Segments = segments;
-    //        this.Coordinate = coordinate;
-    //    }
-
-    //    public Segment[] Segments { get; }
-    //    public long Coordinate { get; }
-    //}
 }
