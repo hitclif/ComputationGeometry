@@ -111,7 +111,7 @@ namespace Tests
                 var b = segment.B;
                 output += $"<line x1='{a.X}' y1='{height - a.Y + 1}' x2='{b.X}' y2='{height + 1 - b.Y}' style='stroke: rgb(0, 0, 0); stroke-width:0.5'>"
                     + Environment.NewLine
-                    + $"<title>S{segment.Name}: {a.X},{a.Y} | {b.X},{b.Y}</title>"
+                    + $"<title>{segment.Name}: {a.X},{a.Y} | {b.X},{b.Y}</title>"
                     + Environment.NewLine
                     + "</line>"
                     + Environment.NewLine

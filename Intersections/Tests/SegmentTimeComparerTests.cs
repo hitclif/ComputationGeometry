@@ -200,7 +200,9 @@ namespace Tests
 
         private int Compare(Segment u, Segment v, long time)
         {
-            var result = new SegmentTimeComparer(Event.BeginSegment(u)).Compare(u, v);
+            var comparer = new SegmentTimeComparer(Event.BeginSegment(u));// { Event = Event.BeginSegment(u) };
+
+            var result = comparer.Compare(u, v);
             return result;
         }
     }

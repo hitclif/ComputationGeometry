@@ -28,37 +28,51 @@ namespace SetOfSegments
             Console.ReadLine();
         }
 
-        private static IEnumerable<Segment> TestData1()
+        private static List<Segment> TestData1()
         {
-            yield return new Segment(0, -7, -3, 2, 6);
-            yield return new Segment(1, -7, 2, 9, -2);
-            yield return new Segment(2, 3, -3, -3, 6);
+            var segments = new List<Segment> {
+                new Segment(0, -7, -3, 2, 6),
+                new Segment(1, -7, 2, 9, -2),
+                new Segment(2, 3, -3, -3, 6)
+            };
+
+            return segments;
         }
 
-        private static IEnumerable<Segment> TestData2()
+        private static List<Segment> TestData2()
         {
-            yield return new Segment(0, 29, 48, 30, 13);
-            yield return new Segment(1, 49, 57, -68, -24);
-            yield return new Segment(2, 17, -30, 55, 16);
-            yield return new Segment(3, 19, -61, 91, -2);
-            yield return new Segment(4, 44, -22, 21, 73);
-            yield return new Segment(5, -68, -38, -77, 90);
-            yield return new Segment(6, -74, 84, 55, -32);
-            yield return new Segment(7, 26, 72, -91, 64);
-            yield return new Segment(8, -21, -41, -3, 75);
+            var segments = new List<Segment>
+            {
+                new Segment(0, 29, 48, 30, 13),
+                new Segment(1, 49, 57, -68, -24),
+                new Segment(2, 17, -30, 55, 16),
+                new Segment(3, 19, -61, 91, -2),
+                new Segment(4, 44, -22, 21, 73),
+                new Segment(5, -68, -38, -77, 90),
+                new Segment(6, -74, 84, 55, -32),
+                new Segment(7, 26, 72, -91, 64),
+                new Segment(8, -21, -41, -3, 75)
+            };
+
+            return segments;
         }
 
-        private static IEnumerable<Segment> ReadSegments()
+        private static List<Segment> ReadSegments()
         {
+            var segments = new List<Segment>();
             var count = Convert.ToInt32(Console.ReadLine());
             for (var i = 0; i < count; i++)
             {
                 var line = Console.ReadLine().Trim().Split(' ').ToArray();
-                yield return new Segment(
+                segments.Add(new Segment(
                     i,
-                    new Point(Convert.ToInt64(line[0]), Convert.ToInt64(line[1])),
-                    new Point(Convert.ToInt64(line[2]), Convert.ToInt64(line[3])));
+                    Convert.ToInt64(line[0]),
+                    Convert.ToInt64(line[1]),
+                    Convert.ToInt64(line[2]),
+                    Convert.ToInt64(line[3])));
             }
+
+            return segments;
         }
     }
 
@@ -271,7 +285,7 @@ namespace SetOfSegments
 
         public int CompareTo(Event other)
         {
-            return Math.Sign(this.Time2 - other.Time2);
+            return -Math.Sign(this.Time2 - other.Time2);
         }
 
         public static Event BeginSegment(Segment segment)
@@ -325,7 +339,7 @@ namespace SetOfSegments
     {
         private List<Event> _events = new List<Event>();
         private List<Event> _intersections = new List<Event>();
-        
+
         private readonly bool _doLog;
 
         public EventQueue(bool doLog)
@@ -333,9 +347,10 @@ namespace SetOfSegments
             _doLog = doLog;
         }
 
-        public void Clear()
+        public void Clear(int segmentsCount)
         {
-            _events = new List<Event>();
+            _events = new List<Event>(segmentsCount * 2);
+            _intersections = new List<Event>(segmentsCount);
         }
 
         public int Count => _events.Count;
@@ -358,12 +373,12 @@ namespace SetOfSegments
 
         public Event Dequeue()
         {
-            var queue = _intersections.Count == 0 || _intersections[0].Time2 > _events[0].Time2
+            var queue = _intersections.Count == 0 || _intersections[_intersections.Count - 1].Time2 > _events[_events.Count - 1].Time2
                 ? _events
                 : _intersections;
 
-            var @event = queue[0];
-            queue.RemoveAt(0);
+            var @event = queue[queue.Count - 1];
+            queue.RemoveAt(queue.Count - 1);
 
             if (_doLog)
             {
@@ -401,9 +416,9 @@ namespace SetOfSegments
 
         public int Length => _status.Count;
 
-        public void Clear()
+        public void Clear(int capacity)
         {
-            _status = new List<Segment>();
+            _status = new List<Segment>(capacity);
         }
 
         public Segment GetAtIndex(int index)
@@ -455,13 +470,13 @@ namespace SetOfSegments
 
     public class SweepLine
     {
-        private readonly IEnumerable<Segment> _segments;
+        private readonly IReadOnlyCollection<Segment> _segments;
         private readonly bool _log;
         private List<Intersection> _intersections = new List<Intersection>();
         private Status _status = new Status();
         private EventQueue _eventQueue;
 
-        public SweepLine(IEnumerable<Segment> segments, bool log)
+        public SweepLine(IReadOnlyCollection<Segment> segments, bool log)
         {
             _eventQueue = new EventQueue(log);
             _segments = segments;
@@ -472,8 +487,8 @@ namespace SetOfSegments
         {
             _intersections = new List<Intersection>();
 
-            _status.Clear();
-            _eventQueue.Clear();
+            _status.Clear(_segments.Count);
+            _eventQueue.Clear(_segments.Count);
 
             this.PrepereEventQueue();
 
@@ -506,8 +521,6 @@ namespace SetOfSegments
 
         private void PrepereEventQueue()
         {
-            _eventQueue.Clear();
-
             var events = _segments
                 .SelectMany(s => new[] { Event.BeginSegment(s), Event.EndSegment(s) })
                 .ToArray();
