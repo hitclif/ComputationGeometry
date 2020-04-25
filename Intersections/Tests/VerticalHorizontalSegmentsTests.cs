@@ -95,6 +95,7 @@ namespace Tests
         }
 
         [TestMethod]
+        [Ignore("Takes up to 6min")]
         public void ManySegments()
         {
             var hSegments = Enumerable.Range(2, 25000)
