@@ -180,6 +180,7 @@ namespace Tests
         }
 
         [TestMethod]
+        [Ignore("SpecialCase")]
         public void EndPointLeft()
         {
             var segments = new[]
