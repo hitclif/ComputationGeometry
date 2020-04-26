@@ -8,9 +8,9 @@ namespace SetOfSegments
 {
     [DebuggerDisplay("{ToDebugString()}")]
     public class AvlTree<T> : IEnumerable<T>
-        where T : IComparable<T>
     {
         private IAvlNode<T> _root;
+        private readonly IComparer<T> _comparer;
 
         public AvlTree() : this(Comparer<T>.Default)
         {
@@ -19,6 +19,7 @@ namespace SetOfSegments
         public AvlTree(IComparer<T> comparer)
         {
             _root = new EmptyNode<T>(comparer);
+            _comparer = comparer;
         }
 
         public int Count
@@ -39,7 +40,7 @@ namespace SetOfSegments
 
         public void Add(params T[] values)
         {
-            for(var i = 0; i< values.Length; i++)
+            for(var i = 0; i < values.Length; i++)
             {
                 _root = _root.Add(values[i]);
             }
@@ -77,7 +78,7 @@ namespace SetOfSegments
 
         public void Clear()
         {
-            _root = null;
+            _root = new EmptyNode<T>(_comparer);
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -93,7 +94,7 @@ namespace SetOfSegments
             return this.GetEnumerator();
         }
 
-        private string ToDebugString()
+        public string ToDebugString()
         {
             var sv = this.Select(v => v.ToString()).ToArray();
             var s = string.Join(", ", sv);
@@ -102,7 +103,7 @@ namespace SetOfSegments
     }
     
     internal interface IAvlNode<T> : IEnumerable<T>
-        where T: IComparable<T>
+        // where T: IComparable<T>
     {
         bool IsEmpty { get; }
         int Count { get; }
@@ -120,7 +121,7 @@ namespace SetOfSegments
 
     [DebuggerDisplay("{Left.ValuesList()} | {_value} | {Right.ValuesList()}")]
     internal class AvlNode<T> : IAvlNode<T>
-        where T: IComparable<T>
+        // where T: IComparable<T>
     {
         private readonly T _value;
         private readonly IComparer<T> _comparer;
@@ -402,7 +403,6 @@ namespace SetOfSegments
 
     [DebuggerDisplay("{ValuesList()}")]
     internal class EmptyNode<T> : IAvlNode<T>
-        where T: IComparable<T>
     {
         private readonly IComparer<T> _comparer;
 
