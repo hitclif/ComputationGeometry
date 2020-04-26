@@ -49,6 +49,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AvlTreeTests.cs" />
     <Compile Include="SegmentTimeComparerTests.cs" />
     <Compile Include="SetOfSegmentsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
