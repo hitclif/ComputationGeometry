@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SetOfSegments", "SetOfSegme
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{E7A716C7-9D36-48F5-BDEF-88A19196E617}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolygonIntersection", "PolygonIntersection\PolygonIntersection.csproj", "{E975D209-0525-41ED-A7B4-FFF711701CCF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{E7A716C7-9D36-48F5-BDEF-88A19196E617}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7A716C7-9D36-48F5-BDEF-88A19196E617}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E7A716C7-9D36-48F5-BDEF-88A19196E617}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E975D209-0525-41ED-A7B4-FFF711701CCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E975D209-0525-41ED-A7B4-FFF711701CCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E975D209-0525-41ED-A7B4-FFF711701CCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E975D209-0525-41ED-A7B4-FFF711701CCF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
