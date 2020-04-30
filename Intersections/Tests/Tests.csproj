@@ -49,6 +49,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PolygonIntersectionTests.cs" />
     <Compile Include="SegmentTimeComparerTests.cs" />
     <Compile Include="SetOfSegmentsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -59,6 +60,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PolygonIntersection\PolygonIntersection.csproj">
+      <Project>{E975D209-0525-41ED-A7B4-FFF711701CCF}</Project>
+      <Name>PolygonIntersection</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SetOfSegments\SetOfSegments.csproj">
       <Project>{4A4DF965-222D-487D-B91C-D9B98324708C}</Project>
       <Name>SetOfSegments</Name>
