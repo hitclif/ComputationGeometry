@@ -48,6 +48,12 @@ namespace Diagonal
             return !(a == b);
         }
 
+        public static long Area2(Point a, Point b, Point c)
+        {
+            var area2 = (b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X);
+            return area2;
+        }
+
         public override string ToString()
         {
             return this.X.ToString() + " " + this.Y.ToString();
@@ -123,7 +129,7 @@ namespace Diagonal
 
         public PointPosition PositionOf(Point point)
         {
-            var area2 = this.DoubleArea(point);
+            var area2 = Point.Area2(this.A, this.B, point);
             if(area2 > 0)
             {
                 return PointPosition.Left;
@@ -157,17 +163,6 @@ namespace Diagonal
 
             return t;
         }
-
-        private long DoubleArea(Point p)
-        {
-            var area2 = (this.B.X - this.A.X) * (p.Y - this.A.Y) - (this.B.Y - this.A.Y) * (p.X - this.A.X);
-            return area2;
-        }
-
-        //private double ParamT(Point p)
-        //{
-        //    var t = p.X - 
-        //}
 
         private bool IsInSegmentBox(Point point)
         {
@@ -250,25 +245,37 @@ namespace Diagonal
             var nextNeighour = edges.ElementAt(startPointIndex).B;
             var previousNeighour = edges.ElementAt(previousEdgeIndex).A;
 
-            var positionOfNext = diagonal.PositionOf(nextNeighour);
-            var positionOfPrevious = diagonal.PositionOf(previousNeighour);
+            var isInArc = IsInArc(previousNeighour, diagonal.A, nextNeighour, diagonal.B);
 
-            return positionOfNext != positionOfPrevious
+            return isInArc
                 ? Designation.INTERNAL
                 : Designation.EXTERNAL;
-            //if (positionOfPoint != PointPosition.Right)
-            //{
-            //    return Designation.EXTERNAL;
-            //}
+        }
 
-            //point = edges.ElementAt(previousEdgeIndex).A;
-            //positionOfPoint = diagonal.PositionOf(point);
-            //if (positionOfPoint != PointPosition.Left)
-            //{
-            //    return Designation.EXTERNAL;
-            //}
+        private bool IsInArc(Point a, Point b, Point c, Point x)
+        {
+            var area2 = Point.Area2(a, b, c);
+            var isInArc = area2 >= 0
+                ? IsInConvexArc(a, b, c, x)
+                : IsInConcaveArc(a, b, c, x);
 
-            // return Designation.INTERNAL;
+            return isInArc;
+        }
+
+        private bool IsInConvexArc(Point a, Point b, Point c, Point x)
+        {
+            var a1 = Point.Area2(a, b, x);
+            var a2 = Point.Area2(b, c, x);
+
+            return a1 > 0 && a2 > 0;
+        }
+
+        private bool IsInConcaveArc(Point a, Point b, Point c, Point x)
+        {
+            var a1 = Point.Area2(a, b, x);
+            var a2 = Point.Area2(b, c, x);
+
+            return !(a1 < 0 && a2 < 0);
         }
     }
 
