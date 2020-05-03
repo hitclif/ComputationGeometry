@@ -247,21 +247,28 @@ namespace Diagonal
                 }
             }
 
-            var point = edges.ElementAt(startPointIndex).B;
-            var positionOfPoint = diagonal.PositionOf(point);
-            if(positionOfPoint != PointPosition.Right)
-            {
-                return Designation.EXTERNAL;
-            }
+            var nextNeighour = edges.ElementAt(startPointIndex).B;
+            var previousNeighour = edges.ElementAt(previousEdgeIndex).A;
 
-            point = edges.ElementAt(previousEdgeIndex).A;
-            positionOfPoint = diagonal.PositionOf(point);
-            if (positionOfPoint != PointPosition.Left)
-            {
-                return Designation.EXTERNAL;
-            }
+            var positionOfNext = diagonal.PositionOf(nextNeighour);
+            var positionOfPrevious = diagonal.PositionOf(previousNeighour);
 
-            return Designation.INTERNAL;
+            return positionOfNext != positionOfPrevious
+                ? Designation.INTERNAL
+                : Designation.EXTERNAL;
+            //if (positionOfPoint != PointPosition.Right)
+            //{
+            //    return Designation.EXTERNAL;
+            //}
+
+            //point = edges.ElementAt(previousEdgeIndex).A;
+            //positionOfPoint = diagonal.PositionOf(point);
+            //if (positionOfPoint != PointPosition.Left)
+            //{
+            //    return Designation.EXTERNAL;
+            //}
+
+            // return Designation.INTERNAL;
         }
     }
 

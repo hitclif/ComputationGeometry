@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Diagonal", "Diagonal\Diagon
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{F711CF44-8C4A-4383-9499-54A6E2C4D917}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NumberOfTriangulations", "NumberOfTriangulations\NumberOfTriangulations.csproj", "{DC83D615-512B-41E1-9446-1B27A3DC1ADE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{F711CF44-8C4A-4383-9499-54A6E2C4D917}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F711CF44-8C4A-4383-9499-54A6E2C4D917}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F711CF44-8C4A-4383-9499-54A6E2C4D917}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC83D615-512B-41E1-9446-1B27A3DC1ADE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC83D615-512B-41E1-9446-1B27A3DC1ADE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC83D615-512B-41E1-9446-1B27A3DC1ADE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC83D615-512B-41E1-9446-1B27A3DC1ADE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

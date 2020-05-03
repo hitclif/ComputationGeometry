@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DiagonalTests.cs" />
+    <Compile Include="NumberOfTriangulationsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -59,6 +60,10 @@
     <ProjectReference Include="..\Diagonal\Diagonal.csproj">
       <Project>{0a7a8912-cf8a-4f69-b7f8-554c5fe44cb0}</Project>
       <Name>Diagonal</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NumberOfTriangulations\NumberOfTriangulations.csproj">
+      <Project>{dc83d615-512b-41e1-9446-1b27a3dc1ade}</Project>
+      <Name>NumberOfTriangulations</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
