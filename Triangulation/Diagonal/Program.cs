@@ -61,9 +61,10 @@ namespace Diagonal
 
         public override bool Equals(object obj)
         {
-            return obj is Point point &&
-                   this.X == point.X &&
-                   this.Y == point.Y;
+            var point = obj as Point;
+            return !ReferenceEquals(point, null)
+                && this.X == point.X
+                && this.Y == point.Y;
         }
 
         public override int GetHashCode()
