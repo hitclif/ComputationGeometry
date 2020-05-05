@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="DiagonalTests.cs" />
     <Compile Include="EarCuttingTriangulationTests.cs" />
+    <Compile Include="MonotoneTriangulationTests.cs" />
     <Compile Include="NumberOfTriangulationsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SvgExport.cs" />
@@ -66,6 +67,10 @@
     <ProjectReference Include="..\EarCuttingTriangulation\EarCuttingTriangulation.csproj">
       <Project>{c9056a12-857b-41a4-afb9-e8c8e8aadd6b}</Project>
       <Name>EarCuttingTriangulation</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MonotoneTriangulation\MonotoneTriangulation.csproj">
+      <Project>{18fad87e-2862-44ac-b1cb-89301d91090f}</Project>
+      <Name>MonotoneTriangulation</Name>
     </ProjectReference>
     <ProjectReference Include="..\NumberOfTriangulations\NumberOfTriangulations.csproj">
       <Project>{dc83d615-512b-41e1-9446-1b27a3dc1ade}</Project>

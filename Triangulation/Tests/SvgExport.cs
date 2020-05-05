@@ -6,6 +6,38 @@ namespace Tests
 {
     internal static class SvgExport
     {
+        public static string ToSvg(this IReadOnlyCollection<MonotoneTriangulation.Point> polygon)
+        {
+            var segments = new List<S>();
+            for (var i = 0; i < polygon.Count; i++)
+            {
+                segments.Add(new S
+                {
+                    A = new P
+                    {
+                        X = polygon.ElementAt(i).X,
+                        Y = polygon.ElementAt(i).Y
+                    },
+                    B = new P
+                    {
+                        X = polygon.ElementAt((i + 1) % polygon.Count).X,
+                        Y = polygon.ElementAt((i + 1) % polygon.Count).Y
+                    }
+                });
+            }
+
+            var points = polygon
+                .Select(p => new P
+                {
+                    X = p.X,
+                    Y = p.Y
+                })
+                .ToArray();
+
+            var output = segments.ToSvg(points);
+            return output;
+        }
+
         public static string ToSvg(this IReadOnlyCollection<EarCuttingTriangulation.Point> polygon)
         {
             var segments = new List<S>();
