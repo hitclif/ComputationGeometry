@@ -9,18 +9,18 @@ namespace Shared
     [DebuggerDisplay("{ToDebugString()}")]
     public class AvlTree<T> : IEnumerable<T>
     {
-        private IAvlNode<T> _root;
-        private readonly IComparer<T> _comparer;
+        private AvlNode<T> _root;
+        private NodePool<T> _pool;
         private readonly Func<T, string> _toDebugString;
 
-        public AvlTree() : this(Comparer<T>.Default)
+        public AvlTree(int capacity) : this(capacity, Comparer<T>.Default)
         {
         }
 
-        public AvlTree(IComparer<T> comparer, Func<T, string> toDebugString = null)
+        public AvlTree(int capacity, IComparer<T> comparer, Func<T, string> toDebugString = null)
         {
-            _root = new EmptyNode<T>(comparer);
-            _comparer = comparer;
+            _pool = new NodePool<T>(comparer);
+            _pool.Initialize(capacity);
             _toDebugString = toDebugString;
         }
 
@@ -28,7 +28,7 @@ namespace Shared
         {
             get
             {
-                return _root.Count;
+                return _root == null ? 0 : _root.Count;
             }
         }
 
@@ -36,7 +36,7 @@ namespace Shared
         {
             get
             {
-                return _root.BalanceFactor;
+                return _root == null ? 0 : _root.BalanceFactor;
             }
         }
 
@@ -44,23 +44,30 @@ namespace Shared
         {
             for (var i = 0; i < values.Length; i++)
             {
-                _root = _root.Add(values[i]);
+                if (_root == null)
+                {
+                    _root = _pool.Create(values[i]);
+                }
+                else
+                {
+                    _root = _root.Add(values[i]);
+                }
             }
         }
 
         public int IndexOf(T value)
         {
-            return _root.IndexOf(value, 0);
+            return _root == null ? -1 : _root.IndexOf(value, 0);
         }
 
         public bool Contains(T value)
         {
-            return _root.Contains(value);
+            return _root == null ? false : _root.Contains(value);
         }
 
         public void Remove(T value)
         {
-            if (_root.Count == 0)
+            if (_root == null)
             {
                 throw new Exception("Element does not exist");
             }
@@ -70,13 +77,18 @@ namespace Shared
 
         public void RemoveAt(int index)
         {
+            if (_root == null)
+            {
+                throw new Exception("Element does not exist");
+            }
+
             var v = _root.ElementAt(index);
             this.Remove(v);
         }
 
         public void Clear()
         {
-            _root = new EmptyNode<T>(_comparer);
+            _root = null; // new EmptyNode<T>(_comparer);
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -108,40 +120,71 @@ namespace Shared
         }
     }
 
-    internal interface IAvlNode<T> : IEnumerable<T>
-    {
-        T Value { get; }
-        bool IsEmpty { get; }
-        int Count { get; }
-        int BalanceFactor { get; }
-        int Height { get; }
-        int IndexOf(T item, int offset);
-        bool Contains(T item);
-        IAvlNode<T> Add(T item);
-        IAvlNode<T> Remove(T item);
-
-        void UpdateValues();
-        string ValuesList();
-        void Accept(IAvlNodeVisitor<T> visitor);
-    }
-
-    [DebuggerDisplay("{Left.ValuesList()} | {_value} | {Right.ValuesList()}")]
-    internal class AvlNode<T> : IAvlNode<T>
+    internal class NodePool<T>
     {
         private readonly IComparer<T> _comparer;
-        private IAvlNode<T> _left;
-        private IAvlNode<T> _right;
+        private Stack<AvlNode<T>> _stack;
+
+        public NodePool(IComparer<T> comparer)
+        {
+            _comparer = comparer;
+        }
+
+        public void Initialize(int capacity)
+        {
+            _stack = new Stack<AvlNode<T>>(capacity);
+            for(var i = 0; i < capacity; i++)
+            {
+                var node = new AvlNode<T>(_comparer);
+                _stack.Push(node);
+            }
+        }
+
+        public AvlNode<T> Create(T value)
+        {
+            var node = _stack.Pop();
+            node.NodePool = this;
+            node.Reset(value);
+            return node;
+        }
+
+        public void Return(AvlNode<T> node)
+        {
+            if(node.Left != null || node.Right != null)
+            {
+                throw new Exception("Reset node to empty before return to pool");
+            }
+
+            node.NodePool = null;
+            _stack.Push(node);
+        }
+    }
+
+    [DebuggerDisplay("{Left.ValuesList()} | {Value} | {Right.ValuesList()}")]
+    internal class AvlNode<T> : IEnumerable<T>
+    {
+        private readonly IComparer<T> _comparer;
+        private AvlNode<T> _left;
+        private AvlNode<T> _right;
+
+        public AvlNode(IComparer<T> comparer)
+        {
+            _comparer = comparer;
+            this.IsEmpty = true;
+        }
 
         public AvlNode(T value, IComparer<T> comparer)
         {
             Value = value;
             _comparer = comparer;
-            _left = new EmptyNode<T>(comparer);
-            _right = new EmptyNode<T>(comparer);
+            _left = null;
+            _right = null;
             this.UpdateValues();
         }
 
-        public IAvlNode<T> Left
+        public NodePool<T> NodePool { get; set; }
+
+        public AvlNode<T> Left
         {
             get
             {
@@ -154,7 +197,7 @@ namespace Shared
             }
         }
 
-        public IAvlNode<T> Right
+        public AvlNode<T> Right
         {
             get
             {
@@ -169,10 +212,8 @@ namespace Shared
 
         public bool IsEmpty
         {
-            get
-            {
-                return false;
-            }
+            get;
+            private set;
         }
 
         public bool IsHighest => this.Right.IsEmpty;
@@ -183,19 +224,23 @@ namespace Shared
 
         public int Height { get; private set; }
 
-        public T Value { get; }
+        public T Value { get; private set; }
 
-        public IAvlNode<T> Add(T item)
+        public AvlNode<T> Add(T item)
         {
             switch (this.CompareTo(item))
             {
                 case Comparison.Equal:
                     throw new Exception("Item with same value already in the tree");
                 case Comparison.Higher:
-                    this.Left = this.Left.Add(item);
+                    this.Left = this.Left == null
+                        ? this.NodePool.Create(item)
+                        : this.Left.Add(item);
                     break;
                 case Comparison.Lower:
-                    this.Right = this.Right.Add(item);
+                    this.Right = this.Right == null
+                        ? this.NodePool.Create(item)
+                        : this.Right.Add(item);
                     break;
             }
 
@@ -203,7 +248,7 @@ namespace Shared
             return newRoot;
         }
 
-        public IAvlNode<T> Remove(T item)
+        public AvlNode<T> Remove(T item)
         {
             switch (this.CompareTo(item))
             {
@@ -244,22 +289,28 @@ namespace Shared
 
         public IEnumerator<T> GetEnumerator()
         {
-            foreach (var i in this.Left)
+            if (_left != null)
             {
-                yield return i;
+                foreach (var i in this.Left)
+                {
+                    yield return i;
+                }
             }
 
             yield return Value;
 
-            foreach (var i in this.Right)
+            if (_right != null)
             {
-                yield return i;
+                foreach (var i in this.Right)
+                {
+                    yield return i;
+                }
             }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+            return this.GetEnumerator();
         }
 
         private Comparison CompareTo(T item)
@@ -306,47 +357,65 @@ namespace Shared
             return root;
         }
 
-        private IAvlNode<T> RemoveSelf()
+        private AvlNode<T> RemoveSelf()
         {
-            if (this.Left.IsEmpty)
+            var left = this.Left;
+            var right = this.Right;
+
+            this.Left = null;
+            this.Right = null;
+            this.NodePool.Return(this);
+
+            if(left == null)
             {
-                return this.Right;
+                return right;
             }
 
-            var pair = ((AvlNode<T>)this.Left).ElevateHighest();
-            var replacement = ((AvlNode<T>)pair.Item1);
+            if(right == null)
+            {
+                return left;
+            }
 
-            replacement.Right = this.Right;
+            var pair = left.ElevateHighest();
+            var replacement = pair.Item1;
+            replacement.Right = right;
             replacement.Left = pair.Item2;
-
-            var rpl = replacement.Rebalance();
-            return rpl;
+            return replacement;
         }
 
-        private Tuple<IAvlNode<T>, IAvlNode<T>> ElevateHighest()
+        private Tuple<AvlNode<T>, AvlNode<T>> ElevateHighest()
         {
             if (this.Right.IsEmpty)
             {
-                return new Tuple<IAvlNode<T>, IAvlNode<T>>(this, this.Left);
+                return new Tuple<AvlNode<T>, AvlNode<T>>(this, this.Left);
             }
 
-            var pair = ((AvlNode<T>)this.Right).ElevateHighest();
+            var pair = this.Right.ElevateHighest();
             this.Right = pair.Item2;
             var newRoot = this.Rebalance();
-            return new Tuple<IAvlNode<T>, IAvlNode<T>>(pair.Item1, newRoot);
+            return new Tuple<AvlNode<T>, AvlNode<T>>(pair.Item1, newRoot);
         }
 
         public void UpdateValues()
         {
-            Height = Math.Max(_left.Height, _right.Height) + 1;
-            Count = _left.Count + _right.Count + 1;
-            BalanceFactor = _right.Height - _left.Height;
+            var leftHeight = _left == null
+                ? 0
+                : _left.Height;
+
+
+            var rightHeight = _right == null
+                ? 0
+                : _right.Height;
+
+            Height = Math.Max(leftHeight, rightHeight) + 1;
+            Count = (_left == null ? 0 : _left.Count) + (_right == null ? 0 :_right.Count) + 1;
+            BalanceFactor = rightHeight - leftHeight;
         }
 
         // make sure subtreeRoot is not the highest
         private static AvlNode<T> ParentOfHighestValue(AvlNode<T> subtreeRoot)
         {
-            var right = (AvlNode<T>)subtreeRoot.Right;
+            var right = subtreeRoot.Right;
             if (right.IsHighest)
             {
                 return subtreeRoot;
@@ -357,7 +426,7 @@ namespace Shared
 
         private static AvlNode<T> RotateLeft(AvlNode<T> x)
         {
-            var r = (AvlNode<T>)x.Right;
+            var r = x.Right;
             x.Right = r.Left;
             r.Left = x;
             return r;
@@ -365,7 +434,7 @@ namespace Shared
 
         private static AvlNode<T> RotateRight(AvlNode<T> x)
         {
-            var l = (AvlNode<T>)x.Left;
+            var l = x.Left;
             x.Left = l.Right;
             l.Right = x;
             return l;
@@ -373,7 +442,7 @@ namespace Shared
 
         private static AvlNode<T> RotateRightLeft(AvlNode<T> x)
         {
-            var right = (AvlNode<T>)x.Right;
+            var right = x.Right;
             right = RotateRight(right);
             x.Right = right;
 
@@ -383,7 +452,7 @@ namespace Shared
 
         private static AvlNode<T> RotateLeftRight(AvlNode<T> x)
         {
-            var left = (AvlNode<T>)x.Left;
+            var left = x.Left;
             left = RotateLeft(left);
             x.Left = left;
 
@@ -393,13 +462,32 @@ namespace Shared
 
         public string ValuesList()
         {
-            var left = this.Left.ValuesList();
-            var right = this.Right.ValuesList();
+            var left = _left == null ? "" : this.Left.ValuesList();
+            var right = _right == null ? "" : this.Right.ValuesList();
+
             return left
                 + (string.IsNullOrWhiteSpace(left) ? "" : ", ")
                 + Value
                 + (string.IsNullOrWhiteSpace(right) ? "" : ", ")
                 + right;
+        }
+
+        public void Reset(T value)
+        {
+            this.Value = value;
+            this.Count = 1;
+            this.Height = 1;
+            this.IsEmpty = false;
+        }
+
+        public void ResetToEmpty()
+        {
+            this.Left = null;
+            this.Right = null;
+            this.Value = default(T);
+            this.Count = 0;
+            this.Height = 0;
+            this.IsEmpty = true;
         }
 
         public void Accept(IAvlNodeVisitor<T> visitor)
@@ -414,106 +502,6 @@ namespace Shared
             {
                 this.Right.Accept(visitor);
             }
-        }
-    }
-
-    [DebuggerDisplay("{ValuesList()}")]
-    internal class EmptyNode<T> : IAvlNode<T>
-    {
-        private readonly IComparer<T> _comparer;
-
-        public EmptyNode(IComparer<T> comparer)
-        {
-            _comparer = comparer;
-        }
-
-        public bool IsEmpty
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public int Count
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public int BalanceFactor
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public int Height
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public T Value
-        {
-            get
-            {
-                return default(T);
-            }
-        }
-
-        public IAvlNode<T> Add(T item)
-        {
-            return new AvlNode<T>(item, _comparer);
-        }
-
-        public IAvlNode<T> Remove(T item)
-        {
-            throw new Exception("Item not present in collection");
-        }
-
-        public IAvlNode<T> RemoveAt(int index)
-        {
-            throw new Exception("Index out of range");
-        }
-
-        public bool Contains(T item)
-        {
-            return false;
-        }
-
-        public int IndexOf(T item, int offset)
-        {
-            return -1;
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            yield break;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
-
-        public string ValuesList()
-        {
-            return string.Empty;
-        }
-
-        public void UpdateValues()
-        {
-        }
-
-        public void Accept(IAvlNodeVisitor<T> visitor)
-        {
-            visitor.Visit(this);
         }
     }
 
@@ -534,6 +522,6 @@ namespace Shared
 
     internal interface IAvlNodeVisitor<T>
     {
-        Proceed Visit(IAvlNode<T> node);
+        Proceed Visit(AvlNode<T> node);
     }
 }
