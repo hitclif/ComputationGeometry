@@ -4,85 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace ClosestPoint
+namespace Shared
 {
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            Console.ReadLine();
-            var points = Console.ReadLine().ToPoints();
-            var finder = new ClosestPointFinder(points);
-
-            var count = Convert.ToInt32(Console.ReadLine());
-            for(var i = 0; i < count; i++)
-            {
-                var point = Convert.ToInt32(Console.ReadLine());
-                var closest = finder.FindClosestPointTo(point);
-                Console.WriteLine(closest);
-            }
-        }
-    }
-
-    public class ClosestPointFinder
-    {
-        private AvlTree<int> _points = new AvlTree<int>();
-        private ClosestPointVisitor _visitor = new ClosestPointVisitor();
-
-        public ClosestPointFinder(IEnumerable<int> points)
-        {
-            foreach(var p in points)
-            {
-                _points.Add(p);
-            }
-        }
-
-        public int FindClosestPointTo(int point)
-        {
-            _visitor.Reset(point);
-            _points.Accept(_visitor);
-            return _visitor.Result;
-            //var index = _points.BinarySearch(point);
-
-            //if(index < 0)
-            //{
-            //    index = ~index;
-            //}
-
-            //if(index >= _points.Count)
-            //{
-            //    return _points.Last();
-            //}
-
-            //var p1 = _points[index];
-            //if(index == 0)
-            //{
-            //    return p1;
-            //}
-
-            //var p2 = _points[index - 1];
-
-            //var d1 = Math.Abs(p1 - point);
-            //var d2 = Math.Abs(p2 - point);
-
-            //return d1 <= d2
-            //    ? p1
-            //    : p2;
-        }
-    }
-
-    public static class Tools
-    {
-        public static IEnumerable<int> ToPoints(this string line)
-        {
-            var points = line
-                .Trim()
-                .Split(' ')
-                .Select(p => Convert.ToInt32(p));
-            return points;
-        }
-    }
-
     [DebuggerDisplay("{ToDebugString()}")]
     public class AvlTree<T> : IEnumerable<T>
     {
@@ -199,21 +122,19 @@ namespace ClosestPoint
 
         void UpdateValues();
         string ValuesList();
-
         void Accept(IAvlNodeVisitor<T> visitor);
     }
 
     [DebuggerDisplay("{Left.ValuesList()} | {_value} | {Right.ValuesList()}")]
     internal class AvlNode<T> : IAvlNode<T>
     {
-        private readonly T _value;
         private readonly IComparer<T> _comparer;
         private IAvlNode<T> _left;
         private IAvlNode<T> _right;
 
         public AvlNode(T value, IComparer<T> comparer)
         {
-            _value = value;
+            Value = value;
             _comparer = comparer;
             _left = new EmptyNode<T>(comparer);
             _right = new EmptyNode<T>(comparer);
@@ -262,13 +183,7 @@ namespace ClosestPoint
 
         public int Height { get; private set; }
 
-        public T Value
-        {
-            get
-            {
-                return _value;
-            }
-        }
+        public T Value { get; }
 
         public IAvlNode<T> Add(T item)
         {
@@ -334,7 +249,7 @@ namespace ClosestPoint
                 yield return i;
             }
 
-            yield return _value;
+            yield return Value;
 
             foreach (var i in this.Right)
             {
@@ -349,7 +264,7 @@ namespace ClosestPoint
 
         private Comparison CompareTo(T item)
         {
-            return (Comparison)Math.Sign(_comparer.Compare(_value, item));
+            return (Comparison)Math.Sign(_comparer.Compare(Value, item));
         }
 
         private AvlNode<T> Rebalance()
@@ -482,7 +397,7 @@ namespace ClosestPoint
             var right = this.Right.ValuesList();
             return left
                 + (string.IsNullOrWhiteSpace(left) ? "" : ", ")
-                + _value
+                + Value
                 + (string.IsNullOrWhiteSpace(right) ? "" : ", ")
                 + right;
         }
@@ -620,47 +535,5 @@ namespace ClosestPoint
     internal interface IAvlNodeVisitor<T>
     {
         Proceed Visit(IAvlNode<T> node);
-    }
-
-    internal class ClosestPointVisitor : IAvlNodeVisitor<int>
-    {
-        private int _queryPoint;
-        private int _currentDistance = int.MaxValue;
-
-        public int Result { get; private set; }
-
-        public void Reset(int queryPoint)
-        {
-            _queryPoint = queryPoint;
-            _currentDistance = int.MaxValue;
-            this.Result = int.MaxValue;
-        }
-
-        public Proceed Visit(IAvlNode<int> node)
-        {
-            if (node.IsEmpty)
-            {
-                return Proceed.No;
-            }
-
-            if(_queryPoint == node.Value)
-            {
-                this.Result = node.Value;
-                return Proceed.No;
-            }
-
-            var proceed = _queryPoint < node.Value
-                ? Proceed.Left
-                : Proceed.Right;
-
-            var distance = Math.Abs(_queryPoint - node.Value);
-            if (distance < _currentDistance)
-            {
-                _currentDistance = distance;
-                this.Result = node.Value;
-            }
-
-            return proceed;
-        }
     }
 }
