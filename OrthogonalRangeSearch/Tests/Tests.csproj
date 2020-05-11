@@ -51,6 +51,8 @@
   <ItemGroup>
     <Compile Include="AvlTreeTests.cs" />
     <Compile Include="ClosestPointTests.cs" />
+    <Compile Include="KdTreeTests.cs" />
+    <Compile Include="NumberOfPointsInRectangleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -60,6 +62,10 @@
     <ProjectReference Include="..\ClosestPoint\ClosestPoint.csproj">
       <Project>{8cb41ed9-e729-49aa-aaa8-4ca8dcf90ce9}</Project>
       <Name>ClosestPoint</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NumberOfPointsInRectangle\NumberOfPointsInRectangle.csproj">
+      <Project>{C88C2533-C8DE-4074-B6C2-D8CD1F1393E9}</Project>
+      <Name>NumberOfPointsInRectangle</Name>
     </ProjectReference>
     <ProjectReference Include="..\Shared\Shared.csproj">
       <Project>{97f142e5-7788-439f-a1a6-8368d4511df7}</Project>
